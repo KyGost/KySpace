@@ -1,0 +1,12 @@
+[package]
+name = "KySpace"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+crow = "0.7.2"
+dialoguer = "0.9.0"
+indicatif = "0.16.2"
+lazy_static = "1.4.0"
+rayon = "1.5.1"
+worldgen = "0.5.3"

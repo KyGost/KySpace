@@ -1,0 +1,4 @@
+hard_tabs = true
+imports_granularity = "Crate"
+imports_layout = "Vertical"
+version = "Two"
