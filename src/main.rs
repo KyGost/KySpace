@@ -1,3 +1,5 @@
+use rayon::prelude;
+
 use std::{
 	collections::HashMap,
 	thread,
@@ -24,14 +26,17 @@ use worldgen::{
 };
 
 const TILE_SIZE: i64 = 32;
-const CHUNK_X: i64 = 16;
-const CHUNK_Y: i64 = 16;
+const CHUNK_X: i64 = 4;
+const CHUNK_Y: i64 = 4;
+const MOVE_TIME: u64 = 5;
 
 fn main() -> Result<(), crow::Error> {
 	let mut world = World::new();
 	let mut position = (0, 0);
+	let mut move_by: (i64, i64) = (0, 0);
 
 	let mut mouse_position = (0, 0);
+	let mut frame_count = 0;
 
 	let event_loop = EventLoop::new();
 	let mut ctx = Context::new(WindowBuilder::new(), &event_loop)?;
@@ -59,7 +64,7 @@ fn main() -> Result<(), crow::Error> {
 
 	let mut request_redraw = true;
 
-	let mut fps = FrameRateLimiter::new(20);
+	let mut fps = FrameRateLimiter::new(10);
 	event_loop.run(
 		move |event: Event<()>, _window_target: _, control_flow: &mut ControlFlow| match event {
 			Event::WindowEvent { event, .. } => match event {
@@ -72,14 +77,12 @@ fn main() -> Result<(), crow::Error> {
 					button: MouseButton::Left,
 					..
 				} => {
-					position = (
-						position.0
-							+ (((mouse_position.0 - (ctx.window().inner_size().width / 2) as i64)
-								/ 2) / TILE_SIZE as i64),
-						position.1
-							+ ((((ctx.window().inner_size().height as i64 - mouse_position.1)
-								- (ctx.window().inner_size().height / 2) as i64)
-								/ 2) / TILE_SIZE as i64),
+					move_by = (
+						(((mouse_position.0 - (ctx.window().inner_size().width / 2) as i64) / 2)
+							/ TILE_SIZE as i64),
+						((((ctx.window().inner_size().height as i64 - mouse_position.1)
+							- (ctx.window().inner_size().height / 2) as i64)
+							/ 2) / TILE_SIZE as i64),
 					);
 					request_redraw = true;
 				}
@@ -101,7 +104,26 @@ fn main() -> Result<(), crow::Error> {
 			},
 			Event::MainEventsCleared => ctx.window().request_redraw(),
 			Event::RedrawRequested(_) => {
+				frame_count += 1;
+				if (move_by.0 != 0 || move_by.1 != 0) && frame_count % MOVE_TIME == 0 {
+					let (move_x, move_y) = (
+						if move_by.0 == 0 {
+							0
+						} else {
+							move_by.0 / move_by.0.abs()
+						},
+						if move_by.1 == 0 {
+							0
+						} else {
+							move_by.1 / move_by.1.abs()
+						},
+					);
+					position = (position.0 + move_x, position.1 + move_y);
+					move_by = (move_by.0 - move_x, move_by.1 - move_y);
+					request_redraw = true;
+				}
 				if request_redraw {
+					request_redraw = false;
 					println!("{:?}", position);
 					let mut surface = ctx.surface();
 					ctx.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
@@ -116,7 +138,6 @@ fn main() -> Result<(), crow::Error> {
 					world.load(position, size);
 					world.draw(&mut ctx, &mut surface, &atlas, position, size);
 					ctx.present(surface).unwrap();
-					request_redraw = false;
 				}
 			}
 			Event::RedrawEventsCleared => fps.frame(),
@@ -291,13 +312,14 @@ impl FrameRateLimiter {
 
 	pub fn frame(&mut self) {
 		self.frame_count += 1;
-		let finish = Duration::from_micros(1_000_000 / u64::from(self.fps)) * self.frame_count;
-		if self.start.elapsed() < finish {
-			while self.start.elapsed() < finish {
-				thread::yield_now();
-			}
-		} else {
-			println!("Lag at frame {}", self.frame_count)
+		thread::sleep(Duration::from_millis(1000 / self.fps as u64));
+		if self.frame_count % 30 == 0 {
+			println!(
+				"Frames: {}, Secs: {}, AvgFPS: {}",
+				self.frame_count,
+				self.start.elapsed().as_secs(),
+				self.frame_count as f64 / self.start.elapsed().as_secs() as f64
+			);
 		}
 	}
 }
