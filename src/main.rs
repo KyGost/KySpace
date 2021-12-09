@@ -23,13 +23,15 @@ use worldgen::{
 	world::{Tile, World as WorldMaker},
 };
 
-const TILE_SIZE: usize = 32;
-const CHUNK_X: usize = 4;
-const CHUNK_Y: usize = 4;
+const TILE_SIZE: i64 = 32;
+const CHUNK_X: i64 = 16;
+const CHUNK_Y: i64 = 16;
 
 fn main() -> Result<(), crow::Error> {
 	let mut world = World::new();
 	let mut position = (0, 0);
+
+	let mut mouse_position = (0, 0);
 
 	let event_loop = EventLoop::new();
 	let mut ctx = Context::new(WindowBuilder::new(), &event_loop)?;
@@ -55,12 +57,32 @@ fn main() -> Result<(), crow::Error> {
 		})
 		.collect::<HashMap<String, Texture>>();
 
+	let mut request_redraw = true;
+
 	let mut fps = FrameRateLimiter::new(20);
 	event_loop.run(
 		move |event: Event<()>, _window_target: _, control_flow: &mut ControlFlow| match event {
 			Event::WindowEvent { event, .. } => match event {
 				WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
-				WindowEvent::CursorMoved { position, .. } => {}
+				WindowEvent::CursorMoved { position, .. } => {
+					mouse_position = (position.x as i64, position.y as i64)
+				}
+				WindowEvent::MouseInput {
+					state: ElementState::Pressed,
+					button: MouseButton::Left,
+					..
+				} => {
+					position = (
+						position.0
+							+ (((mouse_position.0 - (ctx.window().inner_size().width / 2) as i64)
+								/ 2) / TILE_SIZE as i64),
+						position.1
+							+ ((((ctx.window().inner_size().height as i64 - mouse_position.1)
+								- (ctx.window().inner_size().height / 2) as i64)
+								/ 2) / TILE_SIZE as i64),
+					);
+					request_redraw = true;
+				}
 				WindowEvent::KeyboardInput { input, .. } => {
 					if input.state == ElementState::Pressed {
 						if let Some(keycode) = input.virtual_keycode {
@@ -71,6 +93,7 @@ fn main() -> Result<(), crow::Error> {
 								VirtualKeyCode::Down => position = (position.0, position.1 - 1),
 								_ => (),
 							}
+							request_redraw = true;
 						}
 					}
 				}
@@ -78,19 +101,23 @@ fn main() -> Result<(), crow::Error> {
 			},
 			Event::MainEventsCleared => ctx.window().request_redraw(),
 			Event::RedrawRequested(_) => {
-				let mut surface = ctx.surface();
-				ctx.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
+				if request_redraw {
+					println!("{:?}", position);
+					let mut surface = ctx.surface();
+					ctx.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
 
-				let window_size = ctx.window().inner_size();
+					let window_size = ctx.window().inner_size();
 
-				let size = (
-					(window_size.width / TILE_SIZE as u32) as i64 / CHUNK_X as i64,
-					(window_size.height / TILE_SIZE as u32) as i64 / CHUNK_Y as i64,
-				);
+					let size = (
+						(window_size.width / TILE_SIZE as u32) as i64,
+						(window_size.height / TILE_SIZE as u32) as i64,
+					);
 
-				world.load(position, size);
-				world.draw(&mut ctx, &mut surface, &atlas, position, size);
-				ctx.present(surface).unwrap();
+					world.load(position, size);
+					world.draw(&mut ctx, &mut surface, &atlas, position, size);
+					ctx.present(surface).unwrap();
+					request_redraw = false;
+				}
 			}
 			Event::RedrawEventsCleared => fps.frame(),
 			_ => (),
@@ -113,8 +140,8 @@ impl TileType {
 		&self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
-		col: usize,
-		row: usize,
+		x: i64,
+		y: i64,
 		atlas: &HashMap<String, Texture>,
 	) {
 		use TileType::*;
@@ -127,20 +154,20 @@ impl TileType {
 					Grass => atlas.get("grass").unwrap(),
 					_ => unreachable!(),
 				},
-				((col * TILE_SIZE) as i32, (row * TILE_SIZE) as i32),
+				((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
 				&DrawConfig::default(),
 			),
 			Water => ctx.draw(
 				surface,
 				atlas.get("water").unwrap(),
-				((col * TILE_SIZE) as i32, (row * TILE_SIZE) as i32),
+				((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
 				&DrawConfig::default(),
 			),
 			Tree | Bush | Rock => {
 				ctx.draw(
 					surface,
 					atlas.get("grass").unwrap(),
-					((col * TILE_SIZE) as i32, (row * TILE_SIZE) as i32),
+					((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
 					&DrawConfig::default(),
 				);
 				ctx.draw(
@@ -151,7 +178,7 @@ impl TileType {
 						Rock => atlas.get("rock").unwrap(),
 						_ => unreachable!(),
 					},
-					((col * TILE_SIZE) as i32, (row * TILE_SIZE) as i32),
+					((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
 					&DrawConfig::default(),
 				)
 			}
@@ -196,15 +223,17 @@ impl World {
 	}
 	fn load(&mut self, position: (i64, i64), size: (i64, i64)) {
 		let (pos_x, pos_y) = position;
+		let (chunk_pos_x, chunk_pos_y) = (pos_x / CHUNK_X, pos_y / CHUNK_Y);
 		let (size_x, size_y) = size;
+		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
 
-		for chunk_x in pos_x..pos_x + size_x {
+		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
 			let mut row: HashMap<i64, Chunk> = self
 				.chunks
 				.get(&chunk_x)
 				.map(|chunk| chunk.clone())
 				.unwrap_or(HashMap::new());
-			for chunk_y in pos_y..pos_y + size_y {
+			for chunk_y in chunk_pos_y - 1..chunk_pos_y + chunk_size_y {
 				if !row.contains_key(&chunk_y) {
 					let tiles = self.maker.generate(chunk_x, chunk_y).unwrap();
 					row.insert(chunk_y, Chunk { tiles });
@@ -222,18 +251,20 @@ impl World {
 		size: (i64, i64),
 	) {
 		let (pos_x, pos_y) = position;
+		let (chunk_pos_x, chunk_pos_y) = (pos_x / CHUNK_X, pos_y / CHUNK_Y);
 		let (size_x, size_y) = size;
-		for chunk_x in pos_x..pos_x + size_x {
+		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
+		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
 			let row = self.chunks.get(&chunk_x).unwrap();
-			for chunk_y in pos_y..pos_y + size_y {
+			for chunk_y in chunk_pos_y - 1..chunk_pos_y + chunk_size_y {
 				let chunk = row.get(&chunk_y).unwrap();
 				chunk.tiles.iter().enumerate().for_each(|(col, tiles)| {
 					tiles.iter().enumerate().for_each(|(row, tile)| {
 						tile.draw(
 							ctx,
 							surface,
-							((chunk_x - pos_x) as usize * CHUNK_X) + col,
-							((chunk_y - pos_y) as usize * CHUNK_Y) + row,
+							(chunk_x * CHUNK_X) + col as i64 - pos_x,
+							(chunk_y * CHUNK_Y) + row as i64 - pos_y,
 							atlas,
 						);
 					})
