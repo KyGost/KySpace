@@ -11,7 +11,7 @@ use crow::{
 		platform::desktop::EventLoopExtDesktop,
 		window::WindowBuilder,
 	},
-	Context,
+	Context, DrawConfig, Texture, WindowSurface,
 };
 
 use crate::{
@@ -30,6 +30,7 @@ pub struct FrameManager {
 	atlas: Atlas,
 	world: Arc<Mutex<World>>,
 	last_frame: Instant,
+	animations: Vec<(u8, u8, Texture, Vec<Texture>, (i32, i32))>,
 }
 // TODO: Confirm safety
 unsafe impl Sync for FrameManager {}
@@ -52,12 +53,18 @@ impl FrameManager {
 			redraw: true,
 			world,
 			last_frame: Instant::now(),
+			animations: vec![],
 		}
 	}
-	pub fn run_once(&mut self) {
+	pub fn run_once(&mut self, redraw_requested: Arc<Mutex<bool>>) {
 		if let Some(mut event_loop) = self.event_loop.take() {
 			event_loop.run_return(
 				|event: Event<()>, _window_target, control_flow: &mut ControlFlow| {
+					let mut redraw_requested = redraw_requested.lock().unwrap();
+					if *redraw_requested {
+						self.redraw = true;
+						*redraw_requested = false;
+					}
 					self.frame_run(event, control_flow);
 				},
 			);
@@ -134,12 +141,12 @@ impl FrameManager {
 				));
 				self.last_frame = Instant::now();
 				self.frame_count += 1;
-				//println!("Frame {}", self.frame_count);
-				self.redraw = true;
+
+				let mut surface = self.context.surface();
+
 				if self.redraw {
-					//println!("Drawing frame {}", self.frame_count);
 					self.redraw = false;
-					let mut surface = self.context.surface();
+					self.animations = vec![];
 					self.context.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
 
 					let window_size = self.context.window().inner_size();
@@ -159,22 +166,62 @@ impl FrameManager {
 						world.draw(
 							&mut self.context,
 							&mut surface,
-							&self.atlas.atlas,
+							&self.atlas,
 							self.board_size,
 						);
 						world.player.draw(
 							&mut self.context,
 							&mut surface,
-							&self.atlas.atlas,
+							&self.atlas,
 							self.board_position,
+							&mut self.animations,
 						);
 					} else {
 						println!("Couldn't access world, it was locked.");
 					}
-					self.context.present(surface).unwrap();
 				}
+				self.run_animations(&mut surface);
+				self.context.present(surface).unwrap();
 			}
 			_ => (),
 		}
+	}
+	fn run_animations(&mut self, surface: &mut WindowSurface) {
+		self.animations = self
+			.animations
+			.iter()
+			.map(|(frame, duration, underlay, textures, position)| {
+				self.context.draw(
+					surface,
+					underlay,
+					*position,
+					&DrawConfig {
+						scale: (4, 4),
+						..DrawConfig::default()
+					},
+				);
+				self.context.draw(
+					surface,
+					&textures[*frame as usize],
+					*position,
+					&DrawConfig {
+						scale: (2, 2),
+						..DrawConfig::default()
+					},
+				);
+				println!("frame: {}", frame);
+				(
+					if *frame as usize == textures.len() - 1 {
+						0
+					} else {
+						frame + 1
+					},
+					*duration,
+					underlay.clone(),
+					textures.clone(),
+					*position,
+				)
+			}) // TODO: Do this better
+			.collect();
 	}
 }

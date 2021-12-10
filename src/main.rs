@@ -18,7 +18,7 @@ pub mod world;
 use world::World;
 
 // Board
-const TILE_SIZE: i64 = 32; // Pixels
+const TILE_SIZE: i64 = 128; // Pixels
 const CHUNK_X: i64 = 4; // Size of generation
 const CHUNK_Y: i64 = 4; // Size of generation
 
@@ -37,15 +37,20 @@ fn main() {
 
 	let world_arc = Arc::new(Mutex::new(world));
 	let control_arc = Arc::new(Mutex::new(control_manager));
+	let request_redraw = Arc::new(Mutex::new(false));
 
 	let mut frame_manager = FrameManager::new(world_arc.clone(), control_arc.clone());
 	let mut tick_manager = TickManager::new(world_arc, control_arc);
+
+	let tick_request_redraw = request_redraw.clone();
 	thread::spawn(move || loop {
-		tick_manager.run_once();
+		if tick_manager.run_once() {
+			*tick_request_redraw.lock().unwrap() = true;
+		}
 		thread::sleep(normalise_to(TICK_LEN, tick_manager.tick_gap as u64));
 	});
 	loop {
-		frame_manager.run_once() // For some reason render goes yuck if done from another thread
+		frame_manager.run_once(request_redraw.clone()) // For some reason render goes yuck if done from another thread
 	}
 }
 

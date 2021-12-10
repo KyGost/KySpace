@@ -6,21 +6,30 @@ use crate::{
 	TILE_SIZE,
 };
 
+pub enum SpriteTexture {
+	Still(Texture),
+	Animated(Vec<Texture>),
+}
+
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum TextureType {
 	Ground(GroundType),
 	Resource(ResourceType),
 	Other(OtherTexture),
+	AnimatedOther(OtherTexture),
 }
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum OtherTexture {
 	PlayerUp,
 	PlayerDown,
 	PlayerLeft,
+	PlayerRight,
 }
 use {OtherTexture::*, TextureType::*};
 
-const BASE_ATLAS_POSITIONS: [(TextureType, (u32, u32)); 7] = [
+const TILE_SPRITES_SIZE: u32 = 32;
+const TILE_SPRITES_ATLAS: &str = "src/atlas.png";
+const TILE_SPRITES_POSITIONS: [(TextureType, (u32, u32)); 7] = [
 	(Ground(Water), (52, 21)),
 	(Ground(Grass), (3, 18)),
 	(Ground(Dirt), (11, 18)),
@@ -30,40 +39,65 @@ const BASE_ATLAS_POSITIONS: [(TextureType, (u32, u32)); 7] = [
 	(Resource(Tree), (14, 4)),
 ];
 
-const OTHER_SPRITES: [(TextureType, &str); 3] = [
-	(
-		Other(PlayerUp),
-		"src/tiny_rpg/sprites/hero/idle/hero-idle-back/hero-idle-back.png",
-	),
-	(
-		Other(PlayerDown),
-		"src/tiny_rpg/sprites/hero/idle/hero-idle-front/hero-idle-front.png",
-	),
-	(
-		Other(PlayerLeft),
-		"src/tiny_rpg/sprites/hero/idle/hero-idle-side/hero-idle-side.png",
-	),
+const PLAYER_SPRITES_SIZE: u32 = 64;
+const PLAYER_SPRITES_ATLAS: &str = "src/wulax_sprites/walkcycle/BODY_skeleton.png";
+const PLAYER_SPRITES_POSITIONS: [(TextureType, (u32, u32)); 4] = [
+	(Other(PlayerUp), (0, 3)),
+	(Other(PlayerLeft), (0, 2)),
+	(Other(PlayerDown), (0, 1)),
+	(Other(PlayerRight), (0, 0)),
+];
+const ANIMATED_PLAYER_SPRITES_POSITIONS: [(TextureType, u32); 4] = [
+	(AnimatedOther(PlayerUp), 3),
+	(AnimatedOther(PlayerLeft), 2),
+	(AnimatedOther(PlayerDown), 1),
+	(AnimatedOther(PlayerRight), 0),
 ];
 
 pub struct Atlas {
-	pub atlas: HashMap<TextureType, Texture>,
+	pub atlas: HashMap<TextureType, SpriteTexture>,
 }
 impl Atlas {
 	pub fn new(context: &mut Context) -> Self {
-		let atlas_texture = Texture::load(context, "src/atlas.png").unwrap();
-		let atlas = BASE_ATLAS_POSITIONS
+		let tile_atlas_texture = Texture::load(context, TILE_SPRITES_ATLAS).unwrap();
+		let player_atlas_texture = Texture::load(context, PLAYER_SPRITES_ATLAS).unwrap();
+		let atlas = TILE_SPRITES_POSITIONS
 			.into_iter()
 			.map(|(texture_type, (x, y))| {
-				let texture = atlas_texture.get_section(
-					(TILE_SIZE as u32 * x, TILE_SIZE as u32 * y),
-					(TILE_SIZE as u32, TILE_SIZE as u32),
+				let texture = tile_atlas_texture.get_section(
+					(TILE_SPRITES_SIZE * x, TILE_SPRITES_SIZE * y),
+					(TILE_SPRITES_SIZE, TILE_SPRITES_SIZE),
 				);
-				(texture_type, texture)
+				(texture_type, SpriteTexture::Still(texture))
 			})
-			.chain(OTHER_SPRITES.into_iter().map(|(texture_type, asset)| {
-				(texture_type, Texture::load(context, asset).unwrap())
-			}))
-			.collect::<HashMap<TextureType, Texture>>();
+			.chain(
+				PLAYER_SPRITES_POSITIONS
+					.into_iter()
+					.map(|(texture_type, (x, y))| {
+						let texture = player_atlas_texture.get_section(
+							(x * PLAYER_SPRITES_SIZE, y * PLAYER_SPRITES_SIZE),
+							(PLAYER_SPRITES_SIZE, PLAYER_SPRITES_SIZE),
+						);
+						(texture_type, SpriteTexture::Still(texture))
+					}),
+			)
+			.chain(
+				ANIMATED_PLAYER_SPRITES_POSITIONS
+					.into_iter()
+					.map(|(texture_type, y)| {
+						let textures = (1..9)
+							.into_iter()
+							.map(|x| {
+								player_atlas_texture.get_section(
+									(x * PLAYER_SPRITES_SIZE, y * PLAYER_SPRITES_SIZE),
+									(PLAYER_SPRITES_SIZE, PLAYER_SPRITES_SIZE),
+								)
+							})
+							.collect();
+						(texture_type, SpriteTexture::Animated(textures))
+					}),
+			)
+			.collect::<HashMap<TextureType, SpriteTexture>>();
 		Self { atlas }
 	}
 }

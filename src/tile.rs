@@ -1,6 +1,8 @@
-use crate::{atlas::TextureType, TILE_SIZE};
-use crow::{Context, DrawConfig, Texture, WindowSurface};
-use std::collections::HashMap;
+use crate::{
+	atlas::{Atlas, SpriteTexture, TextureType},
+	TILE_SIZE,
+};
+use crow::{Context, DrawConfig, WindowSurface};
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum GroundType {
@@ -23,15 +25,21 @@ impl GroundType {
 		surface: &mut WindowSurface,
 		x: i64,
 		y: i64,
-		atlas: &HashMap<TextureType, Texture>,
+		atlas: &Atlas,
 	) {
-		let texture = atlas.get(&TextureType::Ground(self.clone())).unwrap();
-		ctx.draw(
-			surface,
-			texture,
-			((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
-			&DrawConfig::default(),
-		)
+		let texture = atlas.atlas.get(&TextureType::Ground(self.clone())).unwrap();
+		match texture {
+			SpriteTexture::Still(texture) => ctx.draw(
+				surface,
+				texture,
+				((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
+				&DrawConfig {
+					scale: (4, 4),
+					..DrawConfig::default()
+				},
+			),
+			_ => unimplemented!(),
+		}
 	}
 }
 impl ResourceType {
@@ -41,17 +49,22 @@ impl ResourceType {
 		surface: &mut WindowSurface,
 		x: i64,
 		y: i64,
-		atlas: &HashMap<TextureType, Texture>,
+		atlas: &Atlas,
 	) {
 		atlas
+			.atlas
 			.get(&TextureType::Resource(self.clone()))
-			.map(|texture| {
-				ctx.draw(
+			.map(|texture| match texture {
+				SpriteTexture::Still(texture) => ctx.draw(
 					surface,
 					texture,
 					((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
-					&DrawConfig::default(),
-				)
+					&DrawConfig {
+						scale: (4, 4),
+						..DrawConfig::default()
+					},
+				),
+				_ => unimplemented!(),
 			});
 	}
 }

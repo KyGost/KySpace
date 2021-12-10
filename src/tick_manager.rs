@@ -20,7 +20,8 @@ impl TickManager {
 			tick_gap: TICK_LEN as u128,
 		}
 	}
-	pub fn run_once(&mut self) {
+	pub fn run_once(&mut self) -> bool {
+		let mut request_redraw = false;
 		self.tick_gap = self.last_tick.elapsed().as_millis();
 		self.last_tick = Instant::now();
 		let mut control_manager = self.control_manager.lock().unwrap(); // TODO: Handle
@@ -53,10 +54,12 @@ impl TickManager {
 								if move_by == (0, 0) {
 									return {
 										(*control_manager).complete_pending();
+										false
 									};
 								} else {
 									println!("move by: {:?}", move_by);
 									world.player.move_by(move_by);
+									request_redraw = true;
 								}
 							} else {
 								println!("Couldn't move! World locked!");
@@ -68,6 +71,7 @@ impl TickManager {
 			}
 			None => {}
 		}
+		request_redraw
 	}
 }
 // TODO: Confirm safety

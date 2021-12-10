@@ -10,7 +10,7 @@ use worldgen::{
 	world::{Tile, World as WorldMaker},
 };
 
-use crate::{atlas::TextureType, player::Player, tile::*, CHUNK_X, CHUNK_Y};
+use crate::{atlas::Atlas, atlas::TextureType, player::Player, tile::*, CHUNK_X, CHUNK_Y};
 
 #[derive(Clone)]
 pub struct Chunk {
@@ -117,7 +117,7 @@ impl World {
 		&mut self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
-		atlas: &HashMap<TextureType, Texture>,
+		atlas: &Atlas,
 		size: (i64, i64),
 	) {
 		let (pos_x, pos_y) = self.player.get_position();
