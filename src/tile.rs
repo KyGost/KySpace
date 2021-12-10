@@ -42,7 +42,18 @@ impl GroundType {
 					..DrawConfig::default()
 				},
 			),
-			_ => unimplemented!(),
+			SpriteTexture::Animated(textures) => ctx.draw(
+				surface,
+				&textures[fastrand::usize(..textures.len())],
+				(
+					((x * TILE_SIZE) + offset.0) as i32,
+					((y * TILE_SIZE) + offset.1) as i32,
+				),
+				&DrawConfig {
+					scale: (4, 4),
+					..DrawConfig::default()
+				},
+			),
 		}
 	}
 }

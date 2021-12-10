@@ -1,0 +1,83 @@
+## Beach / Desert
+
+"[LPC] Beach/Desert" by bluecarrot16, Guillaume Lecollinet, Johann Charlot, cynicmusic, Surt, vk, Yar, Michele Bucelli (Buch), Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Lanea Zimmerman (Sharm), Frode Lindeijer (Modanung).
+CC-BY-SA 3.0
+
+BrowserQuest Sprites and Tiles
+Guillaume Lecollinet
+CC-BY-SA 3.0
+http://opengameart.org/content/browserquest-sprites-and-tiles
+
+Shoot'em up graphic kit
+Johann Charlot
+CC-BY-SA 3.0 / GPL 3.0
+https://opengameart.org/content/shootem-up-graphic-kit
+
+Pixelsphere 32x32 Tileset + Grass + Trees
+cynicmusic
+CC0
+http://opengameart.org/content/pixelsphere-32x32-tileset-grass-trees
+
+trees
+Surt, vk
+CC0
+https://opengameart.org/content/trees-1
+
+Isometric 64x64 Outside Tileset
+Yar
+CC-BY 3.0
+https://opengameart.org/content/isometric-64x64-outside-tileset
+
+Tuxemon tileset
+Michele Bucelli (Buch)
+CC-BY-SA 3.0
+https://opengameart.org/content/tuxemon-tileset
+
+Lots of trees and plants from OGA (DB32) tilesets pack 1
+Richard Kettering (Jetrel), Zachariah Husiar (Zabin), Hyptosis, Surt
+CC0
+https://opengameart.org/content/lots-of-trees-and-plants-from-oga-db32-tilesets-pack-1
+
+Bone Planet
+Hyptosis
+CC0
+https://opengameart.org/content/bone-planet
+
+Whispers of Avalon: Desert Tileset
+Leonard Pabin, Ali-G
+CC-BY 3.0 / GPL 3.0 / GPL 2.0
+https://opengameart.org/content/whispers-of-avalon-desert-tileset
+
+[LPC] Arabic Elements
+Lanea Zimmerman (Sharm), William Thompson
+CC-BY 3.0 / GPL 3.0 / GPL 2.0 / OGA-BY 3.0 
+https://opengameart.org/content/lpc-arabic-elements
+
+Lots of free 2d tiles and sprites by Hyptosis
+Hyptosis, Zachariah Husiar (Zabin)
+CC-BY 3.0
+https://opengameart.org/content/lots-of-free-2d-tiles-and-sprites-by-hyptosis
+
+The Mana World, Evol Online accessories
+Evol Online <http://evolonline.org>
+graphics/tilesets/accessory.png
+Alige, Coolkid782, Hal9000, Len, Reid
+CC BY-SA 3.0 <https://github.com/themanaworld/client-data/blob/6272ecd9ac8fa2b3bfd529697180c4ef731b9a32/LICENSE>
+https://github.com/themanaworld/client-data/blob/6f7a0784ad2a992c3d7e026b5df05bdef11fc292/graphics/tilesets/accessory.png
+
+The Mana World, Evol Online Palm trees
+Evol Online <http://evolonline.org>
+graphics/tilesets/tree-x3x4.png
+Frode Lindeijer (Modanung) (big palm tree), and Leonard Pabin (small palm tree)
+CC-BY 3.0 / GPL 3.0 / GPL 2.0 <https://github.com/themanaworld/client-data/blob/8a466c26e3c551d6057b20ebfe3ebceda7988b18/LICENSE#L446>
+https://faq.tuxfamily.org/Game:EvolOnline/En
+https://github.com/themanaworld/client-data/blob/8a466c26e3c551d6057b20ebfe3ebceda7988b18/graphics/tilesets/tree-x3x4.png
+
+ZRPG Beach
+Zachariah Husiar (Zabin), Richard Kettering (Jetrel), Lanea Zimmerman (Sharm), Hyptosis, Frode Lindeijer (Modanung), Leonard Pabin, and others
+https://opengameart.org/content/zrpg-beach
+
+TMW Cactus
+Frode Lindeijer (Modanung)
+CC-BY-SA.3.0 / GPLv2 (see also <https://opengameart.org/comment/65559#comment-65559>)
+http://pixeljoint.com/pixelart/13549.htm

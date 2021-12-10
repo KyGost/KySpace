@@ -33,7 +33,7 @@ impl World {
 
 		let resourcemap = NoiseMap::new(noise)
 			.set(Seed::of(resourceseed))
-			.set(Step::of(0.2, 0.2));
+			.set(Step::of(0.5, 0.5));
 
 		let height_water = (-1.5, -0.5);
 		let height_grass = (-0.5, 0.5);
