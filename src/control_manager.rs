@@ -1,4 +1,4 @@
-use crow::glutin::event::MouseButton;
+use crow::glutin::event::{MouseButton, VirtualKeyCode};
 
 use crate::MOVE_TIME;
 
@@ -22,6 +22,23 @@ impl ControlManager {
 		if button == MouseButton::Left {
 			self.pending_action = Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1)));
 		}
+	}
+	pub fn press(&mut self, keycode: VirtualKeyCode, pos: (i64, i64)) {
+		self.pending_action = match keycode {
+			VirtualKeyCode::Right | VirtualKeyCode::D => {
+				Some(PlayerAction::new(Action::MoveTo(pos.0 + 1, pos.1)))
+			}
+			VirtualKeyCode::Left | VirtualKeyCode::A => {
+				Some(PlayerAction::new(Action::MoveTo(pos.0 - 1, pos.1)))
+			}
+			VirtualKeyCode::Up | VirtualKeyCode::W => {
+				Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1 + 1)))
+			}
+			VirtualKeyCode::Down | VirtualKeyCode::S => {
+				Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1 - 1)))
+			}
+			_ => None,
+		};
 	}
 }
 

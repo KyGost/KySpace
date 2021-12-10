@@ -7,7 +7,9 @@ use crow::{Context, DrawConfig, WindowSurface};
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum GroundType {
 	Water,
+	PlainGrass,
 	Grass,
+	WindSweptGrass,
 	Dirt,
 	Stone,
 }
@@ -16,6 +18,7 @@ pub enum ResourceType {
 	Rock,
 	Bush,
 	Tree,
+	Flower,
 	None,
 }
 impl GroundType {

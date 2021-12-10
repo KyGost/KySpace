@@ -97,20 +97,20 @@ impl FrameManager {
 						println!("Received input but Control Manager was locked!");
 					}
 				}
-				/*WindowEvent::KeyboardInput { input, .. } => {
+				WindowEvent::KeyboardInput { input, .. } => {
 					if input.state == ElementState::Pressed {
 						if let Some(keycode) = input.virtual_keycode {
-							match keycode {
-								VirtualKeyCode::Right => position = (position.0 + 1, position.1),
-								VirtualKeyCode::Left => position = (position.0 - 1, position.1),
-								VirtualKeyCode::Up => position = (position.0, position.1 + 1),
-								VirtualKeyCode::Down => position = (position.0, position.1 - 1),
-								_ => (),
+							if let Ok(mut control_manager) = self.control_manager.lock() {
+								(*control_manager).press(
+									keycode,
+									*self.world.lock().unwrap().player.get_position(),
+								);
+							} else {
+								println!("Received input but Control Manager was locked!");
 							}
-							request_redraw = true;
 						}
 					}
-				}*/
+				}
 				_ => (),
 			},
 			Event::MainEventsCleared => self.context.window().request_redraw(),

@@ -26,11 +26,11 @@ const CHUNK_X: i64 = 4; // Size of generation
 const CHUNK_Y: i64 = 4; // Size of generation
 
 // Frames
-const FRAME_LEN: u64 = 200; // 20 ms :. 50fps
+const FRAME_LEN: u64 = 80; // 20 ms :. 50fps
 
 // Ticks
 const TICK_LEN: u64 = 100; // 100 ms :. 10tps
-const MOVE_TIME: u64 = 5; // :. 0.5s
+const MOVE_TIME: u64 = 3; // :. 0.5s
 const CHOP_TIME: u64 = 20; // :. 2s
 
 fn main() {

@@ -29,15 +29,17 @@ impl World {
 
 		let groundmap = NoiseMap::new(noise)
 			.set(Seed::of(groundseed))
-			.set(Step::of(0.2, 0.2));
+			.set(Step::of(-0.1, -0.1));
 
 		let resourcemap = NoiseMap::new(noise)
 			.set(Seed::of(resourceseed))
-			.set(Step::of(0.5, 0.5));
+			.set(Step::of(0.1, -0.1));
 
 		let height_water = (-1.5, -0.5);
-		let height_grass = (-0.5, 0.5);
-		let height_dirt = (0.5, 1.0);
+		let height_stillgrass = (-0.5, -0.4);
+		let height_grass = (-0.4, 0.1);
+		let height_windsweptgrass = (0.1, 0.4);
+		let height_dirt = (0.4, 1.0);
 		let height_stone = (1.0, 1.5);
 
 		macro_rules! tile {
@@ -58,7 +60,9 @@ impl World {
 			WorldMaker::new()
 				.set(Size::of(CHUNK_X as i64, CHUNK_Y as i64))
 				.add(tile!(Water, height_water))
+				.add(tile!(PlainGrass, height_stillgrass))
 				.add(tile!(Grass, height_grass))
+				.add(tile!(WindSweptGrass, height_windsweptgrass))
 				.add(tile!(Dirt, height_dirt))
 				.add(tile!(Stone, height_stone))
 				.add(Tile::new(Dirt)) // Default dirt
@@ -75,6 +79,7 @@ impl World {
 				.add(tile!(Rock, (height_dirt.0, height_stone.1), size_medium))
 				.add(tile!(Bush, height_grass, size_medium))
 				.add(tile!(Tree, height_grass, size_large))
+				.add(tile!(Flower, height_stillgrass, size_small))
 				.add(Tile::new(None))
 		};
 
