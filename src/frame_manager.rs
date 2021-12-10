@@ -15,22 +15,22 @@ use crow::{
 };
 
 use crate::{
-	atlas::Atlas, control_manager::ControlManager, normalise_to, World, FRAME_LEN, TILE_SIZE,
+	atlas::Atlas, control_manager::ControlManager, normalise_to, pixel_to_tile_pos, World,
+	FRAME_LEN, TILE_SIZE,
 };
 
 pub struct FrameManager {
 	mouse_position: (i64, i64),
 	board_size: (i64, i64),
+	board_offset: (i64, i64),
 	board_position: (i64, i64),
 	event_loop: Option<EventLoop<()>>,
 	context: Context,
 	pub control_manager: Arc<Mutex<ControlManager>>,
 	frame_count: u64,
-	pub redraw: bool,
 	atlas: Atlas,
 	world: Arc<Mutex<World>>,
 	last_frame: Instant,
-	animations: Vec<(u8, u8, Texture, Vec<Texture>, (i32, i32))>,
 }
 // TODO: Confirm safety
 unsafe impl Sync for FrameManager {}
@@ -44,27 +44,21 @@ impl FrameManager {
 		Self {
 			mouse_position: (0, 0),
 			board_size: (0, 0),
+			board_offset: (0, 0),
 			board_position: (0, 0),
 			context,
 			event_loop: Some(event_loop),
 			control_manager,
 			atlas,
 			frame_count: 0,
-			redraw: true,
 			world,
 			last_frame: Instant::now(),
-			animations: vec![],
 		}
 	}
-	pub fn run_once(&mut self, redraw_requested: Arc<Mutex<bool>>) {
+	pub fn run_once(&mut self) {
 		if let Some(mut event_loop) = self.event_loop.take() {
 			event_loop.run_return(
 				|event: Event<()>, _window_target, control_flow: &mut ControlFlow| {
-					let mut redraw_requested = redraw_requested.lock().unwrap();
-					if *redraw_requested {
-						self.redraw = true;
-						*redraw_requested = false;
-					}
 					self.frame_run(event, control_flow);
 				},
 			);
@@ -85,34 +79,20 @@ impl FrameManager {
 					button,
 					..
 				} => {
-					let (mouse_x, mouse_y) = self.mouse_position;
 					let window_size = self.context.window().inner_size();
 					let (window_x, window_y) =
 						(window_size.width as i64, window_size.height as i64);
-					let world = self.world.lock().unwrap();
-					let player_pos = world.player.get_position();
-					let (player_x, player_y) = player_pos;
+					let (mouse_x, mouse_y) = self.mouse_position;
+					let mouse_y = window_y - mouse_y; // Mouse Y is inverse to Display Y
 
-					println!(
-						"mouse: {:?}, window: {:?}, player: {:?}",
-						self.mouse_position,
-						window_size,
-						(player_x * TILE_SIZE, player_y * TILE_SIZE)
+					let clicked = pixel_to_tile_pos(
+						(window_x, window_y),
+						(mouse_x, mouse_y),
+						*self.world.lock().unwrap().player.get_position(),
 					);
-
-					let (rel_center_x, rel_center_y) = (
-						(mouse_x - (window_x / 2)), // Mouse X is inverse to Display X
-						((window_y / 2) - mouse_y),
-					);
-					let (tile_rel_center_x, tile_rel_center_y) =
-						(rel_center_x / TILE_SIZE, rel_center_y / TILE_SIZE);
-					let (world_x, world_y) = (
-						(tile_rel_center_x / 2) + player_x,
-						(tile_rel_center_y / 2) + player_y,
-					); // no idea why but values are doubled
 
 					if let Ok(mut control_manager) = self.control_manager.lock() {
-						(*control_manager).click(button, (world_x, world_y));
+						(*control_manager).click(button, clicked);
 					} else {
 						println!("Received input but Control Manager was locked!");
 					}
@@ -143,85 +123,47 @@ impl FrameManager {
 				self.frame_count += 1;
 
 				let mut surface = self.context.surface();
+				self.context.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
 
-				if self.redraw {
-					self.redraw = false;
-					self.animations = vec![];
-					self.context.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
+				let window_size = self.context.window().inner_size();
 
-					let window_size = self.context.window().inner_size();
+				self.board_size = (
+					window_size.width as i64 / TILE_SIZE,
+					window_size.height as i64 / TILE_SIZE,
+				);
+				self.board_offset = (
+					(window_size.width as i64 - (self.board_size.0 * TILE_SIZE)) / 2,
+					(window_size.height as i64 - (self.board_size.1 * TILE_SIZE)) / 2,
+				);
 
-					self.board_size = (
-						(window_size.width / TILE_SIZE as u32) as i64,
-						(window_size.height / TILE_SIZE as u32) as i64,
+				if let Ok(mut world) = self.world.lock() {
+					let player_pos = world.player.get_position();
+					self.board_position = (
+						player_pos.0 - (self.board_size.0 / 2),
+						player_pos.1 - (self.board_size.1 / 2),
 					);
-
-					if let Ok(mut world) = self.world.lock() {
-						let player_pos = world.player.get_position();
-						self.board_position = (
-							player_pos.0 - (self.board_size.0 / 2),
-							player_pos.1 - (self.board_size.1 / 2),
-						);
-						(*world).load(self.board_size);
-						world.draw(
-							&mut self.context,
-							&mut surface,
-							&self.atlas,
-							self.board_size,
-						);
-						world.player.draw(
-							&mut self.context,
-							&mut surface,
-							&self.atlas,
-							self.board_position,
-							&mut self.animations,
-						);
-					} else {
-						println!("Couldn't access world, it was locked.");
-					}
+					(*world).load(self.board_position, self.board_size);
+					world.draw(
+						&mut self.context,
+						&mut surface,
+						&self.atlas,
+						self.board_position,
+						self.board_size,
+						self.board_offset,
+					);
+					world.player.draw(
+						&mut self.context,
+						&mut surface,
+						&self.atlas,
+						self.board_size,
+						self.board_offset,
+					);
+				} else {
+					println!("Couldn't access world, it was locked.");
 				}
-				self.run_animations(&mut surface);
 				self.context.present(surface).unwrap();
 			}
 			_ => (),
 		}
-	}
-	fn run_animations(&mut self, surface: &mut WindowSurface) {
-		self.animations = self
-			.animations
-			.iter()
-			.map(|(frame, duration, underlay, textures, position)| {
-				self.context.draw(
-					surface,
-					underlay,
-					*position,
-					&DrawConfig {
-						scale: (4, 4),
-						..DrawConfig::default()
-					},
-				);
-				self.context.draw(
-					surface,
-					&textures[*frame as usize],
-					*position,
-					&DrawConfig {
-						scale: (2, 2),
-						..DrawConfig::default()
-					},
-				);
-				println!("frame: {}", frame);
-				(
-					if *frame as usize == textures.len() - 1 {
-						0
-					} else {
-						frame + 1
-					},
-					*duration,
-					underlay.clone(),
-					textures.clone(),
-					*position,
-				)
-			}) // TODO: Do this better
-			.collect();
 	}
 }

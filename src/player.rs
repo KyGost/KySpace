@@ -20,6 +20,7 @@ pub struct Player {
 	position: (i64, i64),
 	facing: Direction,
 	moved_recently: bool,
+	animation_frame: usize,
 }
 impl Player {
 	pub fn new() -> Self {
@@ -27,10 +28,14 @@ impl Player {
 			position: (0, 0),
 			facing: Direction::Up,
 			moved_recently: false,
+			animation_frame: 0,
 		}
 	}
 	pub fn move_to(&mut self, pos: (i64, i64)) {
 		self.position = pos;
+	}
+	pub fn stopped_moving(&mut self) {
+		self.moved_recently = false;
 	}
 	pub fn move_by(&mut self, pos: (i64, i64)) {
 		self.facing = if pos.1 > 0 {
@@ -51,19 +56,28 @@ impl Player {
 		&self.position
 	}
 	pub fn draw(
-		&self,
+		&mut self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
 		atlas: &Atlas,
-		board_position: (i64, i64),
-		animations: &mut Vec<(u8, u8, Texture, Vec<Texture>, (i32, i32))>,
+		size: (i64, i64),
+		offset: (i64, i64),
 	) {
-		let position_pixels = (
-			((self.position.0 - board_position.0) * TILE_SIZE) as i32 / 2,
-			((self.position.1 - board_position.1) * TILE_SIZE) as i32 / 2,
-		); // Needs to be halved for some reason
+		// Player position (center)
+		//let (pos_x, pos_y) = self.get_position();
+		// Board
+		let (size_x, size_y) = size;
+		//let (board_x, board_y) = board_position;
+
+		let (pos_x, pos_y) = (size_x / 2, size_y / 2);
+		let (pos_x, pos_y) = (pos_x / 2, pos_y / 2); // No idea why but we need to halve these
+		let (pos_x, pos_y) = (pos_x * TILE_SIZE, pos_y * TILE_SIZE);
+		let (pos_x, pos_y) = (pos_x + offset.0, pos_y + offset.1);
+
+		let position_pixels = (pos_x as i32, pos_y as i32);
+
 		if self.moved_recently {
-			let texture = atlas
+			let textures = atlas
 				.atlas
 				.get(match self.facing {
 					Direction::Up => &TextureType::AnimatedOther(OtherTexture::PlayerUp),
@@ -72,15 +86,23 @@ impl Player {
 					Direction::Right => &TextureType::AnimatedOther(OtherTexture::PlayerRight),
 				})
 				.unwrap();
-			let underlay = atlas
-				.atlas
-				.get(&TextureType::Ground(GroundType::Dirt))
-				.unwrap();
-			match (underlay, texture) {
-				(SpriteTexture::Still(underlay), SpriteTexture::Animated(textures)) => {
-					animations.push((0, 1, underlay.clone(), textures.clone(), position_pixels));
-				}
-				_ => unreachable!(),
+			if let SpriteTexture::Animated(textures) = textures {
+				ctx.draw(
+					surface,
+					&textures[self.animation_frame],
+					position_pixels,
+					&DrawConfig {
+						scale: (2, 2),
+						..DrawConfig::default()
+					},
+				);
+				self.animation_frame = if self.animation_frame == textures.len() - 1 {
+					0
+				} else {
+					self.animation_frame + 1
+				};
+			} else {
+				unreachable!()
 			}
 		} else {
 			let texture = atlas

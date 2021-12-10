@@ -11,6 +11,9 @@ use tick_manager::TickManager;
 pub mod control_manager;
 use control_manager::ControlManager;
 
+mod pixel_tile_conversion;
+pub use pixel_tile_conversion::*;
+
 pub mod atlas;
 pub mod player;
 pub mod tile;
@@ -37,20 +40,16 @@ fn main() {
 
 	let world_arc = Arc::new(Mutex::new(world));
 	let control_arc = Arc::new(Mutex::new(control_manager));
-	let request_redraw = Arc::new(Mutex::new(false));
 
 	let mut frame_manager = FrameManager::new(world_arc.clone(), control_arc.clone());
 	let mut tick_manager = TickManager::new(world_arc, control_arc);
 
-	let tick_request_redraw = request_redraw.clone();
 	thread::spawn(move || loop {
-		if tick_manager.run_once() {
-			*tick_request_redraw.lock().unwrap() = true;
-		}
+		tick_manager.run_once();
 		thread::sleep(normalise_to(TICK_LEN, tick_manager.tick_gap as u64));
 	});
 	loop {
-		frame_manager.run_once(request_redraw.clone()) // For some reason render goes yuck if done from another thread
+		frame_manager.run_once() // For some reason render goes yuck if done from another thread
 	}
 }
 

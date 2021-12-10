@@ -25,6 +25,7 @@ impl GroundType {
 		surface: &mut WindowSurface,
 		x: i64,
 		y: i64,
+		offset: (i64, i64),
 		atlas: &Atlas,
 	) {
 		let texture = atlas.atlas.get(&TextureType::Ground(self.clone())).unwrap();
@@ -32,7 +33,10 @@ impl GroundType {
 			SpriteTexture::Still(texture) => ctx.draw(
 				surface,
 				texture,
-				((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
+				(
+					((x * TILE_SIZE) + offset.0) as i32,
+					((y * TILE_SIZE) + offset.1) as i32,
+				),
 				&DrawConfig {
 					scale: (4, 4),
 					..DrawConfig::default()
@@ -49,6 +53,7 @@ impl ResourceType {
 		surface: &mut WindowSurface,
 		x: i64,
 		y: i64,
+		offset: (i64, i64),
 		atlas: &Atlas,
 	) {
 		atlas
@@ -58,7 +63,10 @@ impl ResourceType {
 				SpriteTexture::Still(texture) => ctx.draw(
 					surface,
 					texture,
-					((x * TILE_SIZE) as i32, (y * TILE_SIZE) as i32),
+					(
+						((x * TILE_SIZE) + offset.0) as i32,
+						((y * TILE_SIZE) + offset.1) as i32,
+					),
 					&DrawConfig {
 						scale: (4, 4),
 						..DrawConfig::default()

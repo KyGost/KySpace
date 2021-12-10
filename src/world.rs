@@ -85,11 +85,12 @@ impl World {
 			player: Player::new(),
 		}
 	}
-	pub fn load(&mut self, size: (i64, i64)) {
-		let (pos_x, pos_y) = self.player.get_position();
-		let (chunk_pos_x, chunk_pos_y) = (pos_x / CHUNK_X, pos_y / CHUNK_Y);
+	pub fn load(&mut self, board_position: (i64, i64), size: (i64, i64)) {
 		let (size_x, size_y) = size;
+		let (board_x, board_y) = board_position;
+		// Measure in chunks
 		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
+		let (chunk_pos_x, chunk_pos_y) = (board_x / CHUNK_X, board_y / CHUNK_Y);
 
 		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
 			let mut row: HashMap<i64, Chunk> = self
@@ -118,12 +119,16 @@ impl World {
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
 		atlas: &Atlas,
+		board_position: (i64, i64),
 		size: (i64, i64),
+		offset: (i64, i64),
 	) {
-		let (pos_x, pos_y) = self.player.get_position();
-		let (chunk_pos_x, chunk_pos_y) = (pos_x / CHUNK_X, pos_y / CHUNK_Y);
 		let (size_x, size_y) = size;
+		let (board_x, board_y) = board_position;
+		// Measure in chunks
 		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
+		let (chunk_pos_x, chunk_pos_y) = (board_x / CHUNK_X, board_y / CHUNK_Y);
+
 		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
 			let row = self.chunks.get(&chunk_x).unwrap();
 			for chunk_y in chunk_pos_y - 1..chunk_pos_y + chunk_size_y {
@@ -136,15 +141,17 @@ impl World {
 							ground.draw(
 								ctx,
 								surface,
-								(chunk_x * CHUNK_X) + col as i64 - pos_x,
-								(chunk_y * CHUNK_Y) + row as i64 - pos_y,
+								((chunk_x * CHUNK_X) + col as i64) - board_x,
+								((chunk_y * CHUNK_Y) + row as i64) - board_y,
+								offset,
 								atlas,
 							);
 							resource.draw(
 								ctx,
 								surface,
-								(chunk_x * CHUNK_X) + col as i64 - pos_x,
-								(chunk_y * CHUNK_Y) + row as i64 - pos_y,
+								(chunk_x * CHUNK_X) + col as i64 - board_x,
+								(chunk_y * CHUNK_Y) + row as i64 - board_y,
+								offset,
 								atlas,
 							);
 						})
