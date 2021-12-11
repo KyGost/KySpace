@@ -24,11 +24,11 @@ pub trait Draw {
 	}
 	fn draw_animated(
 		&self,
-		ctx: &mut Context,
-		surface: &mut WindowSurface,
-		pos: PixelPos,
-		atlas: &Atlas,
-		frame: usize,
+		_ctx: &mut Context,
+		_surface: &mut WindowSurface,
+		_pos: PixelPos,
+		_atlas: &Atlas,
+		_frame: usize,
 	) -> Result<(), Error> {
 		Err(Error::AnimationUnimplemented)
 	}

@@ -2,6 +2,7 @@ use {
 	super::tile::{
 		Asi64,
 		Direction,
+		PixelPos,
 	},
 	crate::TILE_SIZE,
 	crow::glutin::dpi::PhysicalSize,
@@ -24,6 +25,16 @@ impl From<Direction> for TilePos {
 		let Direction { x, y } = from;
 		let (x, y) = (x.as_i64(), y.as_i64());
 		Self { x, y }
+	}
+}
+impl From<PixelPos> for TilePos {
+	// Should ideally be distinguished as TileRel
+	fn from(from: PixelPos) -> Self {
+		let tile_size_pos = from / &(TILE_SIZE, TILE_SIZE).into();
+		Self {
+			x: tile_size_pos.x,
+			y: tile_size_pos.y,
+		}
 	}
 }
 impl From<PhysicalSize<u32>> for TilePos {

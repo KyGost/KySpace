@@ -1,20 +1,19 @@
-use std::{
-	sync::{
-		Arc,
-		Mutex,
+use {
+	crate::{
+		control_manager::Action,
+		world::tile::Direction,
+		ControlManager,
+		Error,
+		World,
+		TICK_LEN,
 	},
-	time::Instant,
-};
-
-use crate::{
-	control_manager::Action,
-	world::tile::{
-		Direction,
-		TilePos,
+	std::{
+		sync::{
+			Arc,
+			Mutex,
+		},
+		time::Instant,
 	},
-	ControlManager,
-	World,
-	TICK_LEN,
 };
 
 pub struct TickManager {
@@ -32,7 +31,7 @@ impl TickManager {
 			tick_gap: TICK_LEN as u128,
 		}
 	}
-	pub fn run_once(&mut self) {
+	pub fn run_once(&mut self) -> Result<(), Error> {
 		self.tick_gap = self.last_tick.elapsed().as_millis();
 		self.last_tick = Instant::now();
 		let mut control_manager = self.control_manager.lock().unwrap(); // TODO: Handle
@@ -47,17 +46,15 @@ impl TickManager {
 								let player_pos = *world.player.get_position();
 								let distance = player_pos - &pos;
 								if distance == (0, 0).into() {
-									return {
-										(*control_manager).complete_pending();
-										world.player.stopped_moving();
-									};
+									(*control_manager).complete_pending();
+									world.player.stopped_moving();
+									return Ok(());
 								} else {
 									let direction = Direction::from(distance);
-									println!("move by: {:?}", direction);
 									world.player.move_by(direction.into());
 								}
 							} else {
-								println!("Couldn't move! World locked!");
+								return Err(Error::WorldManagerLocked);
 							}
 						}
 					}
@@ -66,6 +63,7 @@ impl TickManager {
 			}
 			None => {}
 		}
+		Ok(())
 	}
 }
 // TODO: Confirm safety

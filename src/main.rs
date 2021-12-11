@@ -36,7 +36,7 @@ const FRAME_LEN: u64 = 80; // 20 ms :. 50fps
 // Ticks
 const TICK_LEN: u64 = 100; // 100 ms :. 10tps
 const MOVE_TIME: u64 = 3; // :. 0.5s
-const CHOP_TIME: u64 = 20; // :. 2s
+						  //const CHOP_TIME: u64 = 20; // :. 2s
 
 fn main() {
 	let world = World::new("Wet", "Shiny");
@@ -50,7 +50,7 @@ fn main() {
 	let mut tick_manager = TickManager::new(world_arc, control_arc);
 
 	thread::spawn(move || loop {
-		tick_manager.run_once();
+		tick_manager.run_once().unwrap();
 		thread::sleep(normalise_to(TICK_LEN, tick_manager.tick_gap as u64));
 	});
 	loop {
@@ -66,4 +66,6 @@ pub fn normalise_to(aim_ms: u64, recent_ms: u64) -> Duration {
 pub enum Error {
 	MissingTexture,
 	AnimationUnimplemented,
+	ControlManagerLocked,
+	WorldManagerLocked,
 }

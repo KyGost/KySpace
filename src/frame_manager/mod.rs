@@ -36,10 +36,7 @@ use {
 			Mutex,
 		},
 		thread,
-		time::{
-			Duration,
-			Instant,
-		},
+		time::Instant,
 	},
 };
 
@@ -95,7 +92,7 @@ impl FrameManager {
 			);
 			self.event_loop.replace(event_loop);
 		} else {
-			println!("Tried to run but didn't have access to event loop");
+			panic!("Tried to run but didn't have access to event loop");
 		}
 	}
 	fn frame_run(&mut self, event: Event<()>, control_flow: &mut ControlFlow) -> Result<(), Error> {
@@ -120,7 +117,7 @@ impl FrameManager {
 					if let Ok(mut control_manager) = self.control_manager.lock() {
 						(*control_manager).click(button, clicked);
 					} else {
-						println!("Received input but Control Manager was locked!");
+						return Err(Error::ControlManagerLocked);
 					}
 				}
 				WindowEvent::KeyboardInput { input, .. } => {
@@ -132,7 +129,7 @@ impl FrameManager {
 									*self.world.lock().unwrap().player.get_position(),
 								);
 							} else {
-								println!("Received input but Control Manager was locked!");
+								return Err(Error::ControlManagerLocked);
 							}
 						}
 					}
@@ -173,7 +170,7 @@ impl FrameManager {
 						self.board_size,
 						self.board_offset,
 						self.frame,
-					);
+					)?;
 					let player_pos =
 						(PixelPos::from(self.window_size) / &(2, 2).into()) + &self.board_offset;
 					world.player.draw(
@@ -184,7 +181,7 @@ impl FrameManager {
 						self.frame,
 					)?;
 				} else {
-					println!("Couldn't access world, it was locked.");
+					return Err(Error::ControlManagerLocked);
 				}
 				self.context.present(surface).unwrap();
 			}

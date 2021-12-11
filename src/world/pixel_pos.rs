@@ -80,6 +80,15 @@ impl Div<&PixelPos> for PixelPos {
 		}
 	}
 }
+impl Div<i64> for PixelPos {
+	type Output = Self;
+	fn div(self, rhs: i64) -> Self {
+		Self {
+			x: self.x.div(rhs),
+			y: self.y.div(rhs),
+		}
+	}
+}
 impl PixelPos {
 	pub fn from_mouse(from: PhysicalPosition<f64>, window_size: PhysicalSize<u32>) -> Self {
 		let PhysicalPosition { x, y } = from;
@@ -88,12 +97,9 @@ impl PixelPos {
 		Self { x, y }
 	}
 	pub fn to_rel_tile_pos(self, window_size: PhysicalSize<u32>) -> TilePos {
-		let Self { x, y } = self;
-		let (x, y) = (
-			self.x - (i64::from(window_size.width) / 2),
-			self.y - (i64::from(window_size.height) / 2),
-		); // centered
-		let (x, y) = (x / TILE_SIZE, y / TILE_SIZE);
-		TilePos { x, y }
+		let center_pos = PixelPos::from(window_size) / 2;
+		let rel_pos = self - &center_pos;
+		let rel_pos = rel_pos / 2;
+		rel_pos.into()
 	}
 }

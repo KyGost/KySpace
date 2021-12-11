@@ -6,13 +6,10 @@ use {
 	std::collections::HashMap,
 };
 
-use crate::{
-	tile::{
-		GroundType::*,
-		ResourceType::*,
-		*,
-	},
-	TILE_SIZE,
+use crate::tile::{
+	GroundType::*,
+	ResourceType::*,
+	*,
 };
 
 pub enum SpriteTexture {

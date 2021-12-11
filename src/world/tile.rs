@@ -37,6 +37,6 @@ pub trait AsOrdering {
 }
 impl AsOrdering for i64 {
 	fn as_ordering(self) -> Ordering {
-		self.cmp(&0)
+		0.cmp(&self)
 	}
 }

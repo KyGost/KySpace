@@ -1,43 +1,41 @@
-use std::collections::HashMap;
-
-use crow::{
-	Context,
-	Texture,
-	WindowSurface,
-};
-
-use worldgen::{
-	constraint,
-	noise::perlin::PerlinNoise,
-	noisemap::{
-		NoiseMap,
-		NoiseMapGenerator,
-		Seed,
-		Size,
-		Step,
+use {
+	self::tile::{
+		PixelPos,
+		TilePos,
 	},
-	world::{
-		tile::{
-			Constraint,
-			ConstraintType,
+	crate::{
+		assets::Player,
+		atlas::Atlas,
+		frame_manager::draw::Draw,
+		tile::*,
+		Error,
+		CHUNK_X,
+		CHUNK_Y,
+	},
+	crow::{
+		Context,
+		WindowSurface,
+	},
+	std::collections::HashMap,
+	worldgen::{
+		constraint,
+		noise::perlin::PerlinNoise,
+		noisemap::{
+			NoiseMap,
+			NoiseMapGenerator,
+			Seed,
+			Size,
+			Step,
 		},
-		Tile,
-		World as WorldMaker,
+		world::{
+			tile::{
+				Constraint,
+				ConstraintType,
+			},
+			Tile,
+			World as WorldMaker,
+		},
 	},
-};
-
-use crate::{
-	assets::Player,
-	atlas::Atlas,
-	frame_manager::draw::Draw,
-	tile::*,
-	CHUNK_X,
-	CHUNK_Y,
-};
-
-use self::tile::{
-	PixelPos,
-	TilePos,
 };
 
 pub mod pixel_pos;
@@ -158,7 +156,7 @@ impl World {
 		size: TilePos,
 		offset: PixelPos,
 		frame: usize,
-	) {
+	) -> Result<(), Error> {
 		// Measure in chunks
 		let chunk_pos = pos / &(CHUNK_X, CHUNK_Y).into();
 		let chunk_size = size / &(CHUNK_X, CHUNK_Y).into();
@@ -178,11 +176,15 @@ impl World {
 								+ &(col.try_into().unwrap(), row.try_into().unwrap()).into()
 								- &pos;
 							let pos = PixelPos::from(tile_pos) + &offset;
-							ground.draw(ctx, surface, pos.clone(), atlas, frame);
-							resource.draw(ctx, surface, pos, atlas, frame);
+							ground
+								.draw(ctx, surface, pos.clone(), atlas, frame)
+								.unwrap();
+							resource.draw(ctx, surface, pos, atlas, frame).unwrap();
+							// TODO: Handle
 						})
 				});
 			}
 		}
+		Ok(())
 	}
 }

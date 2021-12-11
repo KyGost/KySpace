@@ -8,7 +8,6 @@ use {
 		frame_manager::draw::Draw,
 		world::tile::PixelPos,
 		Error,
-		TILE_SIZE,
 	},
 	crow::{
 		Context,
@@ -103,21 +102,25 @@ impl Draw for ResourceType {
 		pos: PixelPos,
 		atlas: &Atlas,
 	) -> Result<(), Error> {
-		atlas
-			.atlas
-			.get(&TextureType::Resource(self.clone()))
-			.map(|texture| match texture {
-				SpriteTexture::Still(texture) => ctx.draw(
-					surface,
-					texture,
-					pos.into(),
-					&DrawConfig {
-						scale: (4, 4),
-						..DrawConfig::default()
-					},
-				),
-				_ => unimplemented!(),
-			})
-			.ok_or(Error::MissingTexture)
+		if matches!(self, ResourceType::None) {
+			Ok(())
+		} else {
+			atlas
+				.atlas
+				.get(&TextureType::Resource(self.clone()))
+				.map(|texture| match texture {
+					SpriteTexture::Still(texture) => ctx.draw(
+						surface,
+						texture,
+						pos.into(),
+						&DrawConfig {
+							scale: (4, 4),
+							..DrawConfig::default()
+						},
+					),
+					_ => unimplemented!(),
+				})
+				.ok_or(Error::MissingTexture)
+		}
 	}
 }
