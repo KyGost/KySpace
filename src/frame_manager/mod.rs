@@ -29,7 +29,6 @@ use {
 		},
 		Context,
 	},
-	draw::Draw,
 	std::{
 		sync::{
 			Arc,
@@ -159,7 +158,7 @@ impl FrameManager {
 
 				if let Ok(mut world) = self.world.lock() {
 					let player_pos = world.player.get_position();
-					self.board_position = *player_pos - &(self.board_size / &TilePos::from((2, 2))); // TODO: Define differently
+					self.board_position = *player_pos - &(self.board_size / 4); // TODO: Define differently // I have no idea why this is 4 and not 2
 					(*world).load(self.board_position, self.board_size);
 
 					world.draw(
@@ -169,15 +168,6 @@ impl FrameManager {
 						self.board_position,
 						self.board_size,
 						self.board_offset,
-						self.frame,
-					)?;
-					let player_pos =
-						(PixelPos::from(self.window_size) / &(2, 2).into()) + &self.board_offset;
-					world.player.draw(
-						&mut self.context,
-						&mut surface,
-						player_pos,
-						&self.atlas,
 						self.frame,
 					)?;
 				} else {

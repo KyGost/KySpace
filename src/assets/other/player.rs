@@ -91,7 +91,7 @@ impl Draw for Player {
 
 		let position_pixels = (pos_x as i32, pos_y as i32);
 		*/
-		let pos = pos / 2; // TODO: Figure out why this is needed
+		//let pos = pos / 2; // TODO: Figure out why this is needed
 
 		if self.moved_recently {
 			self.draw_animated(ctx, surface, pos, atlas, frame)

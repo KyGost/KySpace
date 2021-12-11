@@ -3,19 +3,6 @@
 version = 3
 
 [[package]]
-name = "KySpace"
-version = "0.1.0"
-dependencies = [
- "crow",
- "dialoguer",
- "fastrand",
- "indicatif",
- "lazy_static",
- "rayon",
- "worldgen",
-]
-
-[[package]]
 name = "adler"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -615,6 +602,19 @@ name = "khronos_api"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"
+
+[[package]]
+name = "ky_space"
+version = "0.1.0"
+dependencies = [
+ "crow",
+ "dialoguer",
+ "fastrand",
+ "indicatif",
+ "lazy_static",
+ "rayon",
+ "worldgen",
+]
 
 [[package]]
 name = "lazy_static"

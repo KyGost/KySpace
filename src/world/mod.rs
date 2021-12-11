@@ -161,6 +161,8 @@ impl World {
 		let chunk_pos = pos / &(CHUNK_X, CHUNK_Y).into();
 		let chunk_size = size / &(CHUNK_X, CHUNK_Y).into();
 
+		println!("Board: {:?}, Player: {:?}", pos, self.player.get_position());
+
 		for chunk_x in chunk_pos.x - 1..chunk_pos.x + chunk_size.x {
 			let row = self.chunks.get(&chunk_x).unwrap();
 			for chunk_y in chunk_pos.y - 1..chunk_pos.y + chunk_size.y {
@@ -172,14 +174,22 @@ impl World {
 						.for_each(|(row, (ground, resource))| {
 							let chunk_pos: TilePos =
 								TilePos::from((chunk_x, chunk_y)) * &(CHUNK_X, CHUNK_Y).into();
-							let tile_pos: TilePos = chunk_pos
-								+ &(col.try_into().unwrap(), row.try_into().unwrap()).into()
-								- &pos;
-							let pos = PixelPos::from(tile_pos) + &offset;
+							let tile_pos = chunk_pos
+								+ &(col.try_into().unwrap(), row.try_into().unwrap()).into();
+							let rel_pos = tile_pos - &pos;
+							let pixel_pos = PixelPos::from(rel_pos) + &offset;
 							ground
-								.draw(ctx, surface, pos.clone(), atlas, frame)
+								.draw(ctx, surface, pixel_pos.clone(), atlas, frame)
 								.unwrap();
-							resource.draw(ctx, surface, pos, atlas, frame).unwrap();
+							resource
+								.draw(ctx, surface, pixel_pos, atlas, frame)
+								.unwrap();
+							if &tile_pos == self.player.get_position() {
+								// TODO: Do this more generically
+								self.player
+									.draw(ctx, surface, pixel_pos, atlas, frame)
+									.unwrap();
+							}
 							// TODO: Handle
 						})
 				});

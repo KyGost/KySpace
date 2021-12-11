@@ -82,6 +82,15 @@ impl Div<&TilePos> for TilePos {
 		}
 	}
 }
+impl Div<i64> for TilePos {
+	type Output = Self;
+	fn div(self, rhs: i64) -> Self {
+		Self {
+			x: self.x.div(rhs),
+			y: self.y.div(rhs),
+		}
+	}
+}
 impl AddAssign<&TilePos> for TilePos {
 	fn add_assign(&mut self, rhs: &Self) {
 		self.x += rhs.x;
