@@ -7,6 +7,7 @@ use {
 		},
 		frame_manager::draw::Draw,
 		world::tile::PixelPos,
+		Error,
 		TILE_SIZE,
 	},
 	crow::{
@@ -34,8 +35,43 @@ pub enum ResourceType {
 	None,
 }
 impl Draw for GroundType {
-	fn draw(&self, ctx: &mut Context, surface: &mut WindowSurface, pos: PixelPos, atlas: &Atlas) {
-		let texture = atlas.atlas.get(&TextureType::Ground(self.clone())).unwrap();
+	fn draw_animated(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+		frame: usize,
+	) -> Result<(), Error> {
+		let texture = atlas
+			.atlas
+			.get(&TextureType::Ground(self.clone()))
+			.ok_or(Error::MissingTexture)?;
+		if let SpriteTexture::Animated(textures) = texture {
+			Ok(ctx.draw(
+				surface,
+				&textures[frame % textures.len()],
+				pos.into(),
+				&DrawConfig {
+					scale: (4, 4),
+					..DrawConfig::default()
+				},
+			))
+		} else {
+			Err(Error::MissingTexture)
+		}
+	}
+	fn draw_still(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+	) -> Result<(), Error> {
+		let texture = atlas
+			.atlas
+			.get(&TextureType::Ground(self.clone()))
+			.ok_or(Error::MissingTexture)?;
 		match texture {
 			SpriteTexture::Still(texture) => ctx.draw(
 				surface,
@@ -56,10 +92,17 @@ impl Draw for GroundType {
 				},
 			),
 		}
+		Ok(())
 	}
 }
 impl Draw for ResourceType {
-	fn draw(&self, ctx: &mut Context, surface: &mut WindowSurface, pos: PixelPos, atlas: &Atlas) {
+	fn draw_still(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+	) -> Result<(), Error> {
 		atlas
 			.atlas
 			.get(&TextureType::Resource(self.clone()))
@@ -74,6 +117,7 @@ impl Draw for ResourceType {
 					},
 				),
 				_ => unimplemented!(),
-			});
+			})
+			.ok_or(Error::MissingTexture)
 	}
 }

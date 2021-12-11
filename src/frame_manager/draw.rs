@@ -1,11 +1,13 @@
-use crow::{
-	Context,
-	WindowSurface,
-};
-
-use crate::{
-	atlas::Atlas,
-	world::tile::PixelPos,
+use {
+	crate::{
+		atlas::Atlas,
+		world::tile::PixelPos,
+		Error,
+	},
+	crow::{
+		Context,
+		WindowSurface,
+	},
 };
 
 pub trait Draw {
@@ -13,7 +15,28 @@ pub trait Draw {
 		&self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
-		position: PixelPos,
+		pos: PixelPos,
 		atlas: &Atlas,
-	);
+		frame: usize,
+	) -> Result<(), Error> {
+		self.draw_animated(ctx, surface, pos, atlas, frame)
+			.or_else(|_| self.draw_still(ctx, surface, pos, atlas))
+	}
+	fn draw_animated(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+		frame: usize,
+	) -> Result<(), Error> {
+		Err(Error::AnimationUnimplemented)
+	}
+	fn draw_still(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+	) -> Result<(), Error>;
 }

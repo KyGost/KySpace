@@ -1,15 +1,14 @@
-use std::ops::*;
-
-use crow::glutin::dpi::PhysicalSize;
-
-use crate::TILE_SIZE;
-
-use super::tile::{
-	Asi64,
-	Direction,
+use {
+	super::tile::{
+		Asi64,
+		Direction,
+	},
+	crate::TILE_SIZE,
+	crow::glutin::dpi::PhysicalSize,
+	std::ops::*,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TilePos {
 	pub x: i64,
 	pub y: i64,

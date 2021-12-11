@@ -1,26 +1,23 @@
-use std::collections::HashMap;
-
-use crow::{
-	Context,
-	DrawConfig,
-	Texture,
-	WindowSurface,
-};
-
-use crate::{
-	atlas::{
-		Atlas,
-		OtherTexture,
-		SpriteTexture,
-		TextureType,
+use {
+	crate::{
+		atlas::{
+			Atlas,
+			OtherTexture,
+			SpriteTexture,
+			TextureType,
+		},
+		frame_manager::draw::Draw,
+		world::tile::{
+			PixelPos,
+			TilePos,
+		},
+		Error,
 	},
-	frame_manager::{
-		Draw,
-		FrameManager,
+	crow::{
+		Context,
+		DrawConfig,
+		WindowSurface,
 	},
-	tile::GroundType,
-	world::tile::TilePos,
-	TILE_SIZE,
 };
 
 #[derive(Clone)]
@@ -36,7 +33,6 @@ pub struct Player {
 	position: TilePos,
 	facing: Direction,
 	moved_recently: bool,
-	animation_frame: usize,
 }
 impl Player {
 	pub fn new() -> Self {
@@ -44,7 +40,6 @@ impl Player {
 			position: TilePos::from((0, 0)),
 			facing: Direction::Up,
 			moved_recently: false,
-			animation_frame: 0,
 		}
 	}
 	pub fn move_to(&mut self, pos: TilePos) {
@@ -69,18 +64,21 @@ impl Player {
 		self.moved_recently = true;
 	}
 	pub fn get_position(&self) -> &TilePos {
+		println!("Player Pos: {:?}", self.position);
 		&self.position
 	}
 }
 
 impl Draw for Player {
 	fn draw(
-		&mut self,
+		&self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
-		atlas: &Atlas,
 		pos: PixelPos,
-	) {
+		atlas: &Atlas,
+		frame: usize,
+	) -> Result<(), Error> {
+		/*
 		// Player position (center)
 		//let (pos_x, pos_y) = self.get_position();
 		// Board
@@ -93,57 +91,76 @@ impl Draw for Player {
 		let (pos_x, pos_y) = (pos_x + offset.0, pos_y + offset.1);
 
 		let position_pixels = (pos_x as i32, pos_y as i32);
+		*/
 
 		if self.moved_recently {
-			let textures = atlas
-				.atlas
-				.get(match self.facing {
-					Direction::Up => &TextureType::AnimatedOther(OtherTexture::PlayerUp),
-					Direction::Down => &TextureType::AnimatedOther(OtherTexture::PlayerDown),
-					Direction::Left => &TextureType::AnimatedOther(OtherTexture::PlayerLeft),
-					Direction::Right => &TextureType::AnimatedOther(OtherTexture::PlayerRight),
-				})
-				.unwrap();
-			if let SpriteTexture::Animated(textures) = textures {
-				ctx.draw(
-					surface,
-					&textures[self.animation_frame],
-					position_pixels,
-					&DrawConfig {
-						scale: (2, 2),
-						..DrawConfig::default()
-					},
-				);
-				self.animation_frame = if self.animation_frame == textures.len() - 1 {
-					0
-				} else {
-					self.animation_frame + 1
-				};
-			} else {
-				unreachable!()
-			}
+			self.draw_animated(ctx, surface, pos, atlas, frame)
 		} else {
-			let texture = atlas
-				.atlas
-				.get(match self.facing {
-					Direction::Up => &TextureType::Other(OtherTexture::PlayerUp),
-					Direction::Down => &TextureType::Other(OtherTexture::PlayerDown),
-					Direction::Left => &TextureType::Other(OtherTexture::PlayerLeft),
-					Direction::Right => &TextureType::Other(OtherTexture::PlayerRight),
-				})
-				.unwrap();
-			match texture {
-				SpriteTexture::Still(texture) => ctx.draw(
-					surface,
-					texture,
-					position_pixels,
-					&DrawConfig {
-						scale: (2, 2),
-						..DrawConfig::default()
-					},
-				),
-				_ => unreachable!(),
-			}
+			self.draw_still(ctx, surface, pos, atlas)
+		}
+	}
+	fn draw_still(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+	) -> Result<(), Error> {
+		println!("{:?}", pos);
+		let texture = atlas
+			.atlas
+			.get(match self.facing {
+				Direction::Up => &TextureType::Other(OtherTexture::PlayerUp),
+				Direction::Down => &TextureType::Other(OtherTexture::PlayerDown),
+				Direction::Left => &TextureType::Other(OtherTexture::PlayerLeft),
+				Direction::Right => &TextureType::Other(OtherTexture::PlayerRight),
+			})
+			.ok_or(Error::MissingTexture)?;
+		if let SpriteTexture::Still(texture) = texture {
+			Ok(ctx.draw(
+				surface,
+				texture,
+				pos.into(),
+				&DrawConfig {
+					scale: (2, 2),
+					..DrawConfig::default()
+				},
+			))
+		} else {
+			Err(Error::MissingTexture)
+		}
+	}
+	fn draw_animated(
+		&self,
+		ctx: &mut Context,
+		surface: &mut WindowSurface,
+		pos: PixelPos,
+		atlas: &Atlas,
+		frame: usize,
+	) -> Result<(), Error> {
+		let textures = atlas
+			.atlas
+			.get(match self.facing {
+				Direction::Up => &TextureType::AnimatedOther(OtherTexture::PlayerUp),
+				Direction::Down => &TextureType::AnimatedOther(OtherTexture::PlayerDown),
+				Direction::Left => &TextureType::AnimatedOther(OtherTexture::PlayerLeft),
+				Direction::Right => &TextureType::AnimatedOther(OtherTexture::PlayerRight),
+			})
+			.ok_or(Error::MissingTexture)?;
+		if let SpriteTexture::Animated(textures) = textures {
+			Ok(ctx.draw(
+				surface,
+				textures
+					.get(frame % textures.len())
+					.ok_or(Error::MissingTexture)?,
+				pos.into(),
+				&DrawConfig {
+					scale: (2, 2),
+					..DrawConfig::default()
+				},
+			))
+		} else {
+			Err(Error::MissingTexture)
 		}
 	}
 }

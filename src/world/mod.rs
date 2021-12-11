@@ -27,12 +27,9 @@ use worldgen::{
 };
 
 use crate::{
-	atlas::{
-		Atlas,
-		TextureType,
-	},
+	assets::Player,
+	atlas::Atlas,
 	frame_manager::draw::Draw,
-	player::Player,
 	tile::*,
 	CHUNK_X,
 	CHUNK_Y,
@@ -160,6 +157,7 @@ impl World {
 		pos: TilePos,
 		size: TilePos,
 		offset: PixelPos,
+		frame: usize,
 	) {
 		// Measure in chunks
 		let chunk_pos = pos / &(CHUNK_X, CHUNK_Y).into();
@@ -180,8 +178,8 @@ impl World {
 								+ &(col.try_into().unwrap(), row.try_into().unwrap()).into()
 								- &pos;
 							let pos = PixelPos::from(tile_pos) + &offset;
-							ground.draw(ctx, surface, pos.clone(), atlas);
-							resource.draw(ctx, surface, pos, atlas);
+							ground.draw(ctx, surface, pos.clone(), atlas, frame);
+							resource.draw(ctx, surface, pos, atlas, frame);
 						})
 				});
 			}

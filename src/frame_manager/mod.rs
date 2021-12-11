@@ -1,44 +1,46 @@
-use std::{
-	sync::{
-		Arc,
-		Mutex,
-	},
-	thread,
-	time::{
-		Duration,
-		Instant,
-	},
-};
-
-use crow::{
-	glutin::{
-		dpi::PhysicalSize,
-		event::{
-			ElementState,
-			Event,
-			WindowEvent,
+use {
+	crate::{
+		atlas::Atlas,
+		control_manager::ControlManager,
+		normalise_to,
+		world::tile::{
+			PixelPos,
+			TilePos,
 		},
-		event_loop::{
-			ControlFlow,
-			EventLoop,
+		Error,
+		World,
+		FRAME_LEN,
+		TILE_SIZE,
+	},
+	crow::{
+		glutin::{
+			dpi::PhysicalSize,
+			event::{
+				ElementState,
+				Event,
+				WindowEvent,
+			},
+			event_loop::{
+				ControlFlow,
+				EventLoop,
+			},
+			platform::desktop::EventLoopExtDesktop,
+			window::WindowBuilder,
 		},
-		platform::desktop::EventLoopExtDesktop,
-		window::WindowBuilder,
+		Context,
 	},
-	Context,
-};
-
-use crate::{
-	atlas::Atlas,
-	control_manager::ControlManager,
-	normalise_to,
-	world::tile::{
-		PixelPos,
-		TilePos,
+	draw::Draw,
+	std::{
+		sync::{
+			Arc,
+			Mutex,
+		},
+		thread,
+		time::{
+			Duration,
+			Instant,
+		},
 	},
-	World,
-	FRAME_LEN,
-	TILE_SIZE,
 };
 
 pub mod draw;
@@ -52,7 +54,7 @@ pub struct FrameManager {
 	event_loop: Option<EventLoop<()>>,
 	context: Context,
 	pub control_manager: Arc<Mutex<ControlManager>>,
-	frame_count: u64,
+	frame: usize,
 	atlas: Atlas,
 	world: Arc<Mutex<World>>,
 	last_frame: Instant,
@@ -79,8 +81,8 @@ impl FrameManager {
 			event_loop: Some(event_loop),
 			control_manager,
 			atlas,
-			frame_count: 0,
 			world,
+			frame: 0,
 			last_frame: Instant::now(),
 		}
 	}
@@ -88,7 +90,7 @@ impl FrameManager {
 		if let Some(mut event_loop) = self.event_loop.take() {
 			event_loop.run_return(
 				|event: Event<()>, _window_target, control_flow: &mut ControlFlow| {
-					self.frame_run(event, control_flow);
+					self.frame_run(event, control_flow).unwrap();
 				},
 			);
 			self.event_loop.replace(event_loop);
@@ -96,7 +98,7 @@ impl FrameManager {
 			println!("Tried to run but didn't have access to event loop");
 		}
 	}
-	fn frame_run(&mut self, event: Event<()>, control_flow: &mut ControlFlow) {
+	fn frame_run(&mut self, event: Event<()>, control_flow: &mut ControlFlow) -> Result<(), Error> {
 		match event {
 			Event::WindowEvent { event, .. } => match event {
 				WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
@@ -144,7 +146,7 @@ impl FrameManager {
 					self.last_frame.elapsed().as_millis() as u64,
 				));
 				self.last_frame = Instant::now();
-				self.frame_count += 1;
+				self.frame += 1;
 
 				let mut surface = self.context.surface();
 				self.context.clear_color(&mut surface, (0.0, 0.0, 0.0, 1.0));
@@ -170,14 +172,17 @@ impl FrameManager {
 						self.board_position,
 						self.board_size,
 						self.board_offset,
+						self.frame,
 					);
+					let player_pos =
+						(PixelPos::from(self.window_size) / &(2, 2).into()) + &self.board_offset;
 					world.player.draw(
 						&mut self.context,
 						&mut surface,
+						player_pos,
 						&self.atlas,
-						self.board_size,
-						self.board_offset,
-					);
+						self.frame,
+					)?;
 				} else {
 					println!("Couldn't access world, it was locked.");
 				}
@@ -185,5 +190,6 @@ impl FrameManager {
 			}
 			_ => (),
 		}
+		Ok(())
 	}
 }
