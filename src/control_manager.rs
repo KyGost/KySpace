@@ -1,6 +1,12 @@
-use crow::glutin::event::{MouseButton, VirtualKeyCode};
+use crow::glutin::event::{
+	MouseButton,
+	VirtualKeyCode,
+};
 
-use crate::MOVE_TIME;
+use crate::{
+	world::tile::TilePos,
+	MOVE_TIME,
+};
 
 #[derive(Debug)]
 pub struct ControlManager {
@@ -18,24 +24,24 @@ impl ControlManager {
 	pub fn complete_pending(&mut self) -> Option<PlayerAction> {
 		self.pending_action.take()
 	}
-	pub fn click(&mut self, button: MouseButton, pos: (i64, i64)) {
+	pub fn click(&mut self, button: MouseButton, pos: TilePos) {
 		if button == MouseButton::Left {
-			self.pending_action = Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1)));
+			self.pending_action = Some(PlayerAction::new(Action::MoveTo(pos)));
 		}
 	}
-	pub fn press(&mut self, keycode: VirtualKeyCode, pos: (i64, i64)) {
+	pub fn press(&mut self, keycode: VirtualKeyCode, pos: TilePos) {
 		self.pending_action = match keycode {
 			VirtualKeyCode::Right | VirtualKeyCode::D => {
-				Some(PlayerAction::new(Action::MoveTo(pos.0 + 1, pos.1)))
+				Some(PlayerAction::new(Action::MoveTo(pos + &(1, 0).into())))
 			}
 			VirtualKeyCode::Left | VirtualKeyCode::A => {
-				Some(PlayerAction::new(Action::MoveTo(pos.0 - 1, pos.1)))
+				Some(PlayerAction::new(Action::MoveTo(pos + &(-1, 0).into())))
 			}
 			VirtualKeyCode::Up | VirtualKeyCode::W => {
-				Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1 + 1)))
+				Some(PlayerAction::new(Action::MoveTo(pos + &(0, 1).into())))
 			}
 			VirtualKeyCode::Down | VirtualKeyCode::S => {
-				Some(PlayerAction::new(Action::MoveTo(pos.0, pos.1 - 1)))
+				Some(PlayerAction::new(Action::MoveTo(pos + &(0, -1).into())))
 			}
 			_ => None,
 		};
@@ -44,7 +50,7 @@ impl ControlManager {
 
 #[derive(Debug)]
 pub enum Action {
-	MoveTo(i64, i64),
+	MoveTo(TilePos),
 }
 
 #[derive(Debug)]

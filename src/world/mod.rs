@@ -1,16 +1,51 @@
 use std::collections::HashMap;
 
-use crow::{Context, Texture, WindowSurface};
+use crow::{
+	Context,
+	Texture,
+	WindowSurface,
+};
 
-use worldgen::world::tile::{Constraint, ConstraintType};
 use worldgen::{
 	constraint,
 	noise::perlin::PerlinNoise,
-	noisemap::{NoiseMap, NoiseMapGenerator, Seed, Size, Step},
-	world::{Tile, World as WorldMaker},
+	noisemap::{
+		NoiseMap,
+		NoiseMapGenerator,
+		Seed,
+		Size,
+		Step,
+	},
+	world::{
+		tile::{
+			Constraint,
+			ConstraintType,
+		},
+		Tile,
+		World as WorldMaker,
+	},
 };
 
-use crate::{atlas::Atlas, atlas::TextureType, player::Player, tile::*, CHUNK_X, CHUNK_Y};
+use crate::{
+	atlas::{
+		Atlas,
+		TextureType,
+	},
+	frame_manager::draw::Draw,
+	player::Player,
+	tile::*,
+	CHUNK_X,
+	CHUNK_Y,
+};
+
+use self::tile::{
+	PixelPos,
+	TilePos,
+};
+
+pub mod pixel_pos;
+pub mod tile;
+pub mod tile_pos;
 
 #[derive(Clone)]
 pub struct Chunk {
@@ -90,20 +125,18 @@ impl World {
 			player: Player::new(),
 		}
 	}
-	pub fn load(&mut self, board_position: (i64, i64), size: (i64, i64)) {
-		let (size_x, size_y) = size;
-		let (board_x, board_y) = board_position;
+	pub fn load(&mut self, pos: TilePos, size: TilePos) {
 		// Measure in chunks
-		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
-		let (chunk_pos_x, chunk_pos_y) = (board_x / CHUNK_X, board_y / CHUNK_Y);
+		let chunk_pos = pos / &(CHUNK_X, CHUNK_Y).into();
+		let chunk_size = size / &(CHUNK_X, CHUNK_Y).into();
 
-		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
+		for chunk_x in chunk_pos.x - 1..chunk_pos.x + chunk_size.x {
 			let mut row: HashMap<i64, Chunk> = self
 				.chunks
 				.get(&chunk_x)
 				.map(|chunk| chunk.clone())
 				.unwrap_or(HashMap::new());
-			for chunk_y in chunk_pos_y - 1..chunk_pos_y + chunk_size_y {
+			for chunk_y in chunk_pos.y - 1..chunk_pos.y + chunk_size.y {
 				if !row.contains_key(&chunk_y) {
 					let tiles = self
 						.groundmaker
@@ -124,41 +157,31 @@ impl World {
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
 		atlas: &Atlas,
-		board_position: (i64, i64),
-		size: (i64, i64),
-		offset: (i64, i64),
+		pos: TilePos,
+		size: TilePos,
+		offset: PixelPos,
 	) {
-		let (size_x, size_y) = size;
-		let (board_x, board_y) = board_position;
 		// Measure in chunks
-		let (chunk_size_x, chunk_size_y) = (size_x / CHUNK_X, size_y / CHUNK_Y);
-		let (chunk_pos_x, chunk_pos_y) = (board_x / CHUNK_X, board_y / CHUNK_Y);
+		let chunk_pos = pos / &(CHUNK_X, CHUNK_Y).into();
+		let chunk_size = size / &(CHUNK_X, CHUNK_Y).into();
 
-		for chunk_x in chunk_pos_x - 1..chunk_pos_x + chunk_size_x {
+		for chunk_x in chunk_pos.x - 1..chunk_pos.x + chunk_size.x {
 			let row = self.chunks.get(&chunk_x).unwrap();
-			for chunk_y in chunk_pos_y - 1..chunk_pos_y + chunk_size_y {
+			for chunk_y in chunk_pos.y - 1..chunk_pos.y + chunk_size.y {
 				let chunk = row.get(&chunk_y).unwrap();
 				chunk.tiles.iter().enumerate().for_each(|(col, tiles)| {
 					tiles
 						.iter()
 						.enumerate()
 						.for_each(|(row, (ground, resource))| {
-							ground.draw(
-								ctx,
-								surface,
-								((chunk_x * CHUNK_X) + col as i64) - board_x,
-								((chunk_y * CHUNK_Y) + row as i64) - board_y,
-								offset,
-								atlas,
-							);
-							resource.draw(
-								ctx,
-								surface,
-								(chunk_x * CHUNK_X) + col as i64 - board_x,
-								(chunk_y * CHUNK_Y) + row as i64 - board_y,
-								offset,
-								atlas,
-							);
+							let chunk_pos: TilePos =
+								TilePos::from((chunk_x, chunk_y)) * &(CHUNK_X, CHUNK_Y).into();
+							let tile_pos: TilePos = chunk_pos
+								+ &(col.try_into().unwrap(), row.try_into().unwrap()).into()
+								- &pos;
+							let pos = PixelPos::from(tile_pos) + &offset;
+							ground.draw(ctx, surface, pos.clone(), atlas);
+							resource.draw(ctx, surface, pos, atlas);
 						})
 				});
 			}

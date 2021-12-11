@@ -1,9 +1,21 @@
 use std::{
-	sync::{Arc, Mutex},
+	sync::{
+		Arc,
+		Mutex,
+	},
 	time::Instant,
 };
 
-use crate::{control_manager::Action, ControlManager, World, TICK_LEN};
+use crate::{
+	control_manager::Action,
+	world::tile::{
+		Direction,
+		TilePos,
+	},
+	ControlManager,
+	World,
+	TICK_LEN,
+};
 
 pub struct TickManager {
 	world: Arc<Mutex<World>>,
@@ -30,34 +42,19 @@ impl TickManager {
 			Some(mut player_action) => {
 				if player_action.tick() {
 					match player_action.action {
-						MoveTo(x, y) => {
+						MoveTo(pos) => {
 							if let Ok(mut world) = self.world.lock() {
-								let pos = *world.player.get_position();
-								let distance = (x - pos.0, y - pos.1);
-								let move_by = (
-									if distance.0 > 0 {
-										1
-									} else if distance.0 < 0 {
-										-1
-									} else {
-										0
-									},
-									if distance.1 > 0 {
-										1
-									} else if distance.1 < 0 {
-										-1
-									} else {
-										0
-									},
-								);
-								if move_by == (0, 0) {
+								let player_pos = *world.player.get_position();
+								let distance = player_pos - &pos;
+								if distance == (0, 0).into() {
 									return {
 										(*control_manager).complete_pending();
 										world.player.stopped_moving();
 									};
 								} else {
-									println!("move by: {:?}", move_by);
-									world.player.move_by(move_by);
+									let direction = Direction::from(distance);
+									println!("move by: {:?}", direction);
+									world.player.move_by(direction.into());
 								}
 							} else {
 								println!("Couldn't move! World locked!");

@@ -1,11 +1,27 @@
 use std::collections::HashMap;
 
-use crow::{Context, DrawConfig, Texture, WindowSurface};
+use crow::{
+	Context,
+	DrawConfig,
+	Texture,
+	WindowSurface,
+};
 
-use crate::atlas::{Atlas, OtherTexture, SpriteTexture, TextureType};
-use crate::frame_manager::FrameManager;
-use crate::tile::GroundType;
-use crate::TILE_SIZE;
+use crate::{
+	atlas::{
+		Atlas,
+		OtherTexture,
+		SpriteTexture,
+		TextureType,
+	},
+	frame_manager::{
+		Draw,
+		FrameManager,
+	},
+	tile::GroundType,
+	world::tile::TilePos,
+	TILE_SIZE,
+};
 
 #[derive(Clone)]
 pub enum Direction {
@@ -17,7 +33,7 @@ pub enum Direction {
 
 #[derive(Clone)]
 pub struct Player {
-	position: (i64, i64),
+	position: TilePos,
 	facing: Direction,
 	moved_recently: bool,
 	animation_frame: usize,
@@ -25,43 +41,45 @@ pub struct Player {
 impl Player {
 	pub fn new() -> Self {
 		Self {
-			position: (0, 0),
+			position: TilePos::from((0, 0)),
 			facing: Direction::Up,
 			moved_recently: false,
 			animation_frame: 0,
 		}
 	}
-	pub fn move_to(&mut self, pos: (i64, i64)) {
+	pub fn move_to(&mut self, pos: TilePos) {
 		self.position = pos;
 	}
 	pub fn stopped_moving(&mut self) {
 		self.moved_recently = false;
 	}
-	pub fn move_by(&mut self, pos: (i64, i64)) {
-		self.facing = if pos.1 > 0 {
+	pub fn move_by(&mut self, dist: TilePos) {
+		self.facing = if dist.y > 0 {
 			Direction::Up
-		} else if pos.1 < 0 {
+		} else if dist.y < 0 {
 			Direction::Down
-		} else if pos.0 < 0 {
+		} else if dist.x < 0 {
 			Direction::Left
-		} else if pos.0 > 0 {
+		} else if dist.x > 0 {
 			Direction::Right
 		} else {
 			self.facing.clone() // TODO: Don't bother setting
 		};
-		self.position = (self.position.0 + pos.0, self.position.1 + pos.1);
+		self.position += &dist;
 		self.moved_recently = true;
 	}
-	pub fn get_position(&self) -> &(i64, i64) {
+	pub fn get_position(&self) -> &TilePos {
 		&self.position
 	}
-	pub fn draw(
+}
+
+impl Draw for Player {
+	fn draw(
 		&mut self,
 		ctx: &mut Context,
 		surface: &mut WindowSurface,
 		atlas: &Atlas,
-		size: (i64, i64),
-		offset: (i64, i64),
+		pos: PixelPos,
 	) {
 		// Player position (center)
 		//let (pos_x, pos_y) = self.get_position();

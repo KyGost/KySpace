@@ -1,8 +1,17 @@
-use crow::{Context, Texture};
-use std::collections::HashMap;
+use {
+	crow::{
+		Context,
+		Texture,
+	},
+	std::collections::HashMap,
+};
 
 use crate::{
-	tile::{GroundType::*, ResourceType::*, *},
+	tile::{
+		GroundType::*,
+		ResourceType::*,
+		*,
+	},
 	TILE_SIZE,
 };
 
@@ -26,7 +35,10 @@ pub enum OtherTexture {
 	PlayerLeft,
 	PlayerRight,
 }
-use {OtherTexture::*, TextureType::*};
+use {
+	OtherTexture::*,
+	TextureType::*,
+};
 
 const TILE_SPRITE_SIZE: u32 = 32;
 const TILE_SPRITE_ATLAS: &str = "src/bluecarrot16_sprites/terrain.png";

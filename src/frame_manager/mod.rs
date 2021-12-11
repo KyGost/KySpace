@@ -1,29 +1,54 @@
 use std::{
-	sync::{Arc, Mutex},
+	sync::{
+		Arc,
+		Mutex,
+	},
 	thread,
-	time::{Duration, Instant},
+	time::{
+		Duration,
+		Instant,
+	},
 };
 
 use crow::{
 	glutin::{
-		event::{ElementState, Event, WindowEvent},
-		event_loop::{ControlFlow, EventLoop},
+		dpi::PhysicalSize,
+		event::{
+			ElementState,
+			Event,
+			WindowEvent,
+		},
+		event_loop::{
+			ControlFlow,
+			EventLoop,
+		},
 		platform::desktop::EventLoopExtDesktop,
 		window::WindowBuilder,
 	},
-	Context, DrawConfig, Texture, WindowSurface,
+	Context,
 };
 
 use crate::{
-	atlas::Atlas, control_manager::ControlManager, normalise_to, pixel_to_tile_pos, World,
-	FRAME_LEN, TILE_SIZE,
+	atlas::Atlas,
+	control_manager::ControlManager,
+	normalise_to,
+	world::tile::{
+		PixelPos,
+		TilePos,
+	},
+	World,
+	FRAME_LEN,
+	TILE_SIZE,
 };
 
+pub mod draw;
+
 pub struct FrameManager {
-	mouse_position: (i64, i64),
-	board_size: (i64, i64),
-	board_offset: (i64, i64),
-	board_position: (i64, i64),
+	window_size: PhysicalSize<u32>,
+	mouse_position: PixelPos,
+	board_position: TilePos,
+	board_size: TilePos, // Ideally should be differenciated...
+	board_offset: PixelPos,
 	event_loop: Option<EventLoop<()>>,
 	context: Context,
 	pub control_manager: Arc<Mutex<ControlManager>>,
@@ -42,10 +67,14 @@ impl FrameManager {
 		let mut context = Context::new(WindowBuilder::new(), &event_loop).unwrap(); // TODO: Error Management
 		let atlas = Atlas::new(&mut context);
 		Self {
-			mouse_position: (0, 0),
-			board_size: (0, 0),
-			board_offset: (0, 0),
-			board_position: (0, 0),
+			window_size: PhysicalSize {
+				width: 0,
+				height: 0,
+			},
+			mouse_position: (0, 0).into(),
+			board_position: (0, 0).into(),
+			board_size: (0, 0).into(),
+			board_offset: (0, 0).into(),
 			context,
 			event_loop: Some(event_loop),
 			control_manager,
@@ -71,25 +100,20 @@ impl FrameManager {
 		match event {
 			Event::WindowEvent { event, .. } => match event {
 				WindowEvent::CloseRequested => *control_flow = ControlFlow::Exit,
+				WindowEvent::Resized(new_size) => self.window_size = new_size,
 				WindowEvent::CursorMoved { position, .. } => {
-					self.mouse_position = (position.x as i64, position.y as i64)
+					self.mouse_position =
+						PixelPos::from_mouse(position, self.context.window().inner_size());
 				}
 				WindowEvent::MouseInput {
 					state: ElementState::Pressed,
 					button,
 					..
 				} => {
-					let window_size = self.context.window().inner_size();
-					let (window_x, window_y) =
-						(window_size.width as i64, window_size.height as i64);
-					let (mouse_x, mouse_y) = self.mouse_position;
-					let mouse_y = window_y - mouse_y; // Mouse Y is inverse to Display Y
-
-					let clicked = pixel_to_tile_pos(
-						(window_x, window_y),
-						(mouse_x, mouse_y),
-						*self.world.lock().unwrap().player.get_position(),
-					);
+					let clicked = self
+						.mouse_position
+						.to_rel_tile_pos(self.window_size)
+						.to_world_tile(self.world.lock().unwrap().player.get_position());
 
 					if let Ok(mut control_manager) = self.control_manager.lock() {
 						(*control_manager).click(button, clicked);
@@ -127,22 +151,18 @@ impl FrameManager {
 
 				let window_size = self.context.window().inner_size();
 
-				self.board_size = (
-					window_size.width as i64 / TILE_SIZE,
-					window_size.height as i64 / TILE_SIZE,
-				);
+				self.board_size = window_size.into();
 				self.board_offset = (
-					(window_size.width as i64 - (self.board_size.0 * TILE_SIZE)) / 2,
-					(window_size.height as i64 - (self.board_size.1 * TILE_SIZE)) / 2,
-				);
+					(window_size.width as i64 - (self.board_size.x * TILE_SIZE)) / 2,
+					(window_size.height as i64 - (self.board_size.y * TILE_SIZE)) / 2,
+				)
+					.into(); // Get difference halved TODO: Use std ops
 
 				if let Ok(mut world) = self.world.lock() {
 					let player_pos = world.player.get_position();
-					self.board_position = (
-						player_pos.0 - (self.board_size.0 / 2),
-						player_pos.1 - (self.board_size.1 / 2),
-					);
+					self.board_position = *player_pos - &(self.board_size / &TilePos::from((2, 2))); // TODO: Define differently
 					(*world).load(self.board_position, self.board_size);
+
 					world.draw(
 						&mut self.context,
 						&mut surface,

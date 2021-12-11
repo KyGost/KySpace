@@ -1,8 +1,20 @@
-use crate::{
-	atlas::{Atlas, SpriteTexture, TextureType},
-	TILE_SIZE,
+use {
+	crate::{
+		atlas::{
+			Atlas,
+			SpriteTexture,
+			TextureType,
+		},
+		frame_manager::draw::Draw,
+		world::tile::PixelPos,
+		TILE_SIZE,
+	},
+	crow::{
+		Context,
+		DrawConfig,
+		WindowSurface,
+	},
 };
-use crow::{Context, DrawConfig, WindowSurface};
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq)]
 pub enum GroundType {
@@ -21,25 +33,14 @@ pub enum ResourceType {
 	Flower,
 	None,
 }
-impl GroundType {
-	pub fn draw(
-		&self,
-		ctx: &mut Context,
-		surface: &mut WindowSurface,
-		x: i64,
-		y: i64,
-		offset: (i64, i64),
-		atlas: &Atlas,
-	) {
+impl Draw for GroundType {
+	fn draw(&self, ctx: &mut Context, surface: &mut WindowSurface, pos: PixelPos, atlas: &Atlas) {
 		let texture = atlas.atlas.get(&TextureType::Ground(self.clone())).unwrap();
 		match texture {
 			SpriteTexture::Still(texture) => ctx.draw(
 				surface,
 				texture,
-				(
-					((x * TILE_SIZE) + offset.0) as i32,
-					((y * TILE_SIZE) + offset.1) as i32,
-				),
+				pos.into(),
 				&DrawConfig {
 					scale: (4, 4),
 					..DrawConfig::default()
@@ -48,10 +49,7 @@ impl GroundType {
 			SpriteTexture::Animated(textures) => ctx.draw(
 				surface,
 				&textures[fastrand::usize(..textures.len())],
-				(
-					((x * TILE_SIZE) + offset.0) as i32,
-					((y * TILE_SIZE) + offset.1) as i32,
-				),
+				pos.into(),
 				&DrawConfig {
 					scale: (4, 4),
 					..DrawConfig::default()
@@ -60,16 +58,8 @@ impl GroundType {
 		}
 	}
 }
-impl ResourceType {
-	pub fn draw(
-		&self,
-		ctx: &mut Context,
-		surface: &mut WindowSurface,
-		x: i64,
-		y: i64,
-		offset: (i64, i64),
-		atlas: &Atlas,
-	) {
+impl Draw for ResourceType {
+	fn draw(&self, ctx: &mut Context, surface: &mut WindowSurface, pos: PixelPos, atlas: &Atlas) {
 		atlas
 			.atlas
 			.get(&TextureType::Resource(self.clone()))
@@ -77,10 +67,7 @@ impl ResourceType {
 				SpriteTexture::Still(texture) => ctx.draw(
 					surface,
 					texture,
-					(
-						((x * TILE_SIZE) + offset.0) as i32,
-						((y * TILE_SIZE) + offset.1) as i32,
-					),
+					pos.into(),
 					&DrawConfig {
 						scale: (4, 4),
 						..DrawConfig::default()
